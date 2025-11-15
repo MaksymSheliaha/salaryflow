@@ -17,6 +17,9 @@ spring:
       ddl-auto: update
     show-sql: true
 
+  cache:
+    type: redis
+
   data:
     mongodb:
       uri: mongodb://mongo:mongo@localhost:27017/

@@ -29,7 +29,7 @@ public class Employee {
     private Instant birthday;
     @Enumerated(EnumType.STRING)
     private Position position;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="department_id")
     private Department department;
 }
