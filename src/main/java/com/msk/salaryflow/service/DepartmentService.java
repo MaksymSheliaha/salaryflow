@@ -17,7 +17,6 @@ import java.util.UUID;
 public class DepartmentService {
 
     private final DepartmentRepository departmentRepository;
-    private final RedisTemplate<String, Object> redisTemplate;
 
     @CacheEvict(value = {"department", "department_pages"}, allEntries = true)
     public Department save(Department department) {
