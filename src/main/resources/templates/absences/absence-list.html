@@ -1,0 +1,61 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <!-- ...existing head code... -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <title>Absences</title>
+</head>
+<body>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between mb-3">
+        <h2>Absences</h2>
+        <a class="btn btn-primary" th:href="@{/absences/add}">Add Absence</a>
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Employee ID</th>
+            <th>Type</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Comment</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="a : ${absences.content}" th:onclick="|window.location='@{/absences/{id}(id=${a.id})}'|"
+            style="cursor:pointer">
+            <td th:text="${a.employeeId}">EMP</td>
+            <td th:text="${a.type}">TYPE</td>
+            <td th:text="${a.startDate}">START</td>
+            <td th:text="${a.endDate}">END</td>
+            <td th:text="${a.comment}">COMMENT</td>
+            <td>
+                <a th:href="@{/absences/update(id=${a.id})}" class="btn btn-sm btn-secondary">Update</a>
+                <a th:href="@{/absences/delete(id=${a.id})}" class="btn btn-sm btn-danger"
+                   onclick="return confirm('Delete?')">Delete</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <!-- Pagination controls -->
+    <nav th:if="${absences.totalPages > 1}">
+        <ul class="pagination">
+            <li class="page-item" th:classappend="${absences.first} ? 'disabled'">
+                <a class="page-link" th:href="@{/absences(page=${absences.number-1})}">Previous</a>
+            </li>
+            <li class="page-item" th:each="i : ${#numbers.sequence(0, absences.totalPages-1)}"
+                th:classappend="${i == absences.number} ? 'active'">
+                <a class="page-link" th:href="@{/absences(page=${i})}" th:text="${i+1}">1</a>
+            </li>
+            <li class="page-item" th:classappend="${absences.last} ? 'disabled'">
+                <a class="page-link" th:href="@{/absences(page=${absences.number+1})}">Next</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+</body>
+</html>
+

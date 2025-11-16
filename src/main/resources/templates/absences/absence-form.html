@@ -1,0 +1,61 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absence Form</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="container mt-4">
+    <h2 th:text="${absence.id} != null ? 'Edit Absence' : 'Add Absence'">Form</h2>
+    <form th:action="@{/absences/save}" th:object="${absence}" method="post">
+        <input type="hidden" th:field="*{id}"/>
+
+        <!-- Employee ID -->
+        <div class="mb-3">
+            <label class="form-label">Employee ID</label>
+            <input class="form-control" type="text" th:field="*{employeeId}" placeholder="employee UUID"/>
+            <div class="text-danger" th:if="${#fields.hasErrors('employeeId')}" th:errors="*{employeeId}"></div>
+        </div>
+
+        <!-- Type -->
+        <div class="mb-3">
+            <label class="form-label">Type</label>
+            <select class="form-select" th:field="*{type}">
+                <option th:each="t : ${types}" th:value="${t}" th:text="${t}">TYPE</option>
+            </select>
+            <div class="text-danger" th:if="${#fields.hasErrors('type')}" th:errors="*{type}"></div>
+        </div>
+
+        <!-- Dates -->
+        <div class="row">
+            <div class="col mb-3">
+                <label class="form-label">Start Date</label>
+                <input class="form-control" type="date" th:field="*{startDate}"/>
+                <div class="text-danger" th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}"></div>
+            </div>
+            <div class="col mb-3">
+                <label class="form-label">End Date</label>
+                <input class="form-control" type="date" th:field="*{endDate}"/>
+                <div class="text-danger" th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}"></div>
+            </div>
+        </div>
+
+        <!-- Comment -->
+        <div class="mb-3">
+            <label class="form-label">Comment</label>
+            <textarea class="form-control" th:field="*{comment}" rows="3"></textarea>
+        </div>
+
+        <!-- Buttons -->
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary" type="submit">Save</button>
+            <a class="btn btn-secondary" th:href="@{/absences}">Cancel</a>
+            <a th:if="${absence.id != null}" class="btn btn-danger"
+               th:href="@{/absences/delete(id=${absence.id})}" onclick="return confirm('Delete?')">Delete</a>
+        </div>
+    </form>
+</div>
+</body>
+</html>
