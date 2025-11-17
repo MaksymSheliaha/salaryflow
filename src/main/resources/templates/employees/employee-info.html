@@ -9,47 +9,84 @@
 <body>
 
 <div class="container mt-4">
-
     <h3>Employee Information</h3>
 
     <div class="card mt-3">
         <div class="card-body">
             <h5 class="card-title" th:text="${employee.firstName + ' ' + employee.lastName}">Employee Name</h5>
 
-            <p class="card-text">
-                <strong>Gender:</strong>
-                <span th:text="${employee.gender}">Gender</span>
-            </p>
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="card-text">
+                        <strong>First Name:</strong>
+                        <span th:text="${employee.firstName}">First Name</span>
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p class="card-text">
+                        <strong>Last Name:</strong>
+                        <span th:text="${employee.lastName}">Last Name</span>
+                    </p>
+                </div>
+            </div>
 
-            <p class="card-text">
-                <strong>Email:</strong>
-                <span th:text="${employee.email}">Email</span>
-            </p>
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="card-text">
+                        <strong>Gender:</strong>
+                        <span th:text="${employee.gender}">Gender</span>
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p class="card-text">
+                        <strong>Position:</strong>
+                        <span th:text="${employee.position}">Position</span>
+                    </p>
+                </div>
+            </div>
 
-            <p class="card-text">
-                <strong>Position:</strong>
-                <span th:text="${employee.position}">Position</span>
-            </p>
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="card-text">
+                        <strong>Email:</strong>
+                        <span th:text="${employee.email}">Email</span>
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p class="card-text">
+                        <strong>Salary:</strong>
+                        <span th:text="${employee.salary}">Salary</span>
+                    </p>
+                </div>
+            </div>
 
-            <p class="card-text">
-                <strong>Salary:</strong>
-                <span th:text="${employee.salary}">Salary</span>
-            </p>
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="card-text">
+                        <strong>Hire Date:</strong>
+                        <span th:text="${#temporals.format(employee.hireDate, 'dd.MM.yyyy')}">Hire Date</span>
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p class="card-text">
+                        <strong>Birthday:</strong>
+                        <span th:if="${employee.birthday != null}"
+                              th:text="${#temporals.format(employee.birthday, 'dd.MM.yyyy')}">Birthday</span>
+                        <span th:unless="${employee.birthday != null}" class="text-muted">Not set</span>
+                    </p>
+                </div>
+            </div>
 
-            <p class="card-text">
-                <strong>Hire Date:</strong>
-                <span th:text="${employee.hireDate}">Hire Date</span>
-            </p>
-
-            <p class="card-text">
-                <strong>Birthday:</strong>
-                <span th:text="${employee.birthday}">Birthday</span>
-            </p>
-
-            <p class="card-text" th:if="${employee.department != null}">
-                <strong>Department:</strong>
-                <span th:text="${employee.department.name}">Department</span>
-            </p>
+            <div class="row" th:if="${employee.department != null}">
+                <div class="col-md-12">
+                    <p class="card-text">
+                        <strong>Department:</strong>
+                        <span th:text="${employee.department.name}">Department</span>
+                        <span th:if="${employee.department.location != null}"
+                              class="text-muted">(<span th:text="${employee.department.location}"></span>)</span>
+                    </p>
+                </div>
+            </div>
 
         </div>
     </div>
