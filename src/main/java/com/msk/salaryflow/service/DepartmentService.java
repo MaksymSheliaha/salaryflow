@@ -27,6 +27,13 @@ public class DepartmentService {
         return departmentRepository.findAll(pageable);
     }
 
+    public Page<Department> findAll(String searchTerm, Pageable pageable){
+        if(searchTerm == null || searchTerm.trim().isEmpty()){
+            return departmentRepository.findAll(pageable);
+        }
+        return departmentRepository.searchDepartments(searchTerm.trim(), pageable);
+    }
+
     @CacheEvict(value = {"department", "department_pages"}, allEntries = true)
     public void deleteById(UUID id){
         departmentRepository.deleteById(id);

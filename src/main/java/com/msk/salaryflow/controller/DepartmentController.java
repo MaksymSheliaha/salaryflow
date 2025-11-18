@@ -18,8 +18,10 @@ public class DepartmentController {
     private final DepartmentService departmentService;
 
     @GetMapping
-    private String getDepartments(Model model, Pageable pageable){
-        Page<Department> departments = departmentService.findAll(pageable);
+    private String getDepartments(Model model,
+                                  @RequestParam(value = "q", required = false) String searchTerm,
+                                  Pageable pageable){
+        Page<Department> departments = departmentService.findAll(searchTerm, pageable);
         model.addAttribute("departments", departments.toList());
         return "departments/department-list";
     }

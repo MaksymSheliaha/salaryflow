@@ -11,6 +11,19 @@
 <div class="container">
     <h3>Department Directory</h3>
 
+    <!-- Search bar -->
+    <form th:action="@{/departments}" method="get" class="row g-2 mb-3" role="search">
+        <div class="col-sm-8 col-md-6 col-lg-4">
+            <input type="text" name="q" class="form-control" placeholder="Search..."
+                   th:value="${param.q != null ? param.q[0] : ''}" aria-label="Search"/>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-outline-secondary">Search</button>
+        </div>
+        <input type="hidden" name="sort" th:if="${param.sort != null}" th:value="${param.sort[0]}"/>
+        <input type="hidden" name="size" th:if="${param.size != null}" th:value="${param.size[0]}"/>
+    </form>
+
     <a th:href="@{/departments/add}"
        class="btn btn-primary btn-sm mb-3">
         Add Department
@@ -19,8 +32,31 @@
     <table class="table table-bordered table-striped">
         <thead class="table-dark">
         <tr>
-            <th>Name</th>
-            <th>Location</th>
+            <!-- Sortable headers: toggle asc/desc on repeated clicks -->
+            <th th:with="cs=${param.sort != null ? param.sort[0] : ''},
+                           nameActive=${#strings.startsWith(cs,'name,')},
+                           nameDesc=${nameActive ? #strings.contains(cs,',desc') : false},
+                           nextDir=${(nameActive and not nameDesc) ? 'desc' : 'asc'}">
+                <a th:href="@{/departments(sort=${'name,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null})}"
+                   class="link-light text-decoration-none">
+                    Name
+                    <span style="display:inline-block; width: 12px;"
+                          th:text="${nameActive} ? (${nameDesc} ? '↓' : '↑') : ''">
+                    </span>
+                </a>
+            </th>
+            <th th:with="cs=${param.sort != null ? param.sort[0] : ''},
+                           locActive=${#strings.startsWith(cs,'location,')},
+                           locDesc=${locActive ? #strings.contains(cs,',desc') : false},
+                           nextDir=${(locActive and not locDesc) ? 'desc' : 'asc'}">
+                <a th:href="@{/departments(sort=${'location,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null})}"
+                   class="link-light text-decoration-none">
+                    Location
+                    <span style="display:inline-block; width: 12px;"
+                          th:text="${locActive} ? (${locDesc} ? '↓' : '↑') : ''">
+                    </span>
+                </a>
+            </th>
             <th>Actions</th>
         </tr>
         </thead>
@@ -32,13 +68,14 @@
 
             <td th:text="${department.name}"></td>
             <td th:text="${department.location}"></td>
-            <td class="d-flex gap-2">
+            <td class="d-flex gap-2" onclick="event.stopPropagation()">
                 <a th:href="@{/departments/update(departmentId=${department.id})}"
                    class="btn btn-info btn-sm">
                     Update
                 </a>
                 <a th:href="@{/departments/delete(departmentId=${department.id})}"
-                   class="btn btn-danger btn-sm">
+                   class="btn btn-danger btn-sm"
+                    onclick="if (!(confirm('Are you sure you want to delete this employee?'))) return false" >
                     Delete
                 </a>
             </td>
