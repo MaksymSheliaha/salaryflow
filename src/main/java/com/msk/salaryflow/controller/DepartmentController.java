@@ -21,8 +21,9 @@ public class DepartmentController {
     private String getDepartments(Model model,
                                   @RequestParam(value = "q", required = false) String searchTerm,
                                   Pageable pageable){
-        Page<Department> departments = departmentService.findAll(searchTerm, pageable);
-        model.addAttribute("departments", departments.toList());
+        Page<Department> page = departmentService.findAll(searchTerm, pageable);
+        model.addAttribute("departments", page.getContent());
+        model.addAttribute("page", page);
         return "departments/department-list";
     }
 
