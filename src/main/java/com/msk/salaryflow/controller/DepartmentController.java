@@ -2,9 +2,11 @@ package com.msk.salaryflow.controller;
 
 import com.msk.salaryflow.entity.Department;
 import com.msk.salaryflow.entity.DepartmentInfo;
+import com.msk.salaryflow.entity.Employee;
 import com.msk.salaryflow.model.DepartmentSearchRequest;
 import com.msk.salaryflow.model.PageResponse;
 import com.msk.salaryflow.service.DepartmentService;
+import com.msk.salaryflow.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
@@ -18,17 +20,20 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DepartmentController {
     private final DepartmentService departmentService;
+    private final EmployeeService employeeService;
 
     @GetMapping
     private String getDepartments(Model model,
                                   @RequestParam(value = "q", required = false) String searchTerm,
                                   @RequestParam(value = "empInfo", defaultValue = "false") Boolean empInfo,
+                                  @RequestParam(value = "employeeId", required = false) UUID employeeId,
                                   Pageable pageable){
 
         DepartmentSearchRequest request = new DepartmentSearchRequest(pageable, searchTerm, empInfo);
         PageResponse<DepartmentInfo> page = departmentService.findAll(request);
         model.addAttribute("departments", page.content());
         model.addAttribute("page", page);
+        model.addAttribute("employeeId", employeeId);
         return "departments/department-list";
     }
 
@@ -75,6 +80,18 @@ public class DepartmentController {
             model.addAttribute("empInfo", false);
         }
         return "departments/department-info";
+    }
+
+    @PostMapping("/attach")
+    private String attachEmployeeToDepartment(@RequestParam("departmentId") UUID departmentId,
+                                              @RequestParam("employeeId") UUID employeeId) {
+        Employee employee = employeeService.findById(employeeId);
+        Department department = departmentService.findById(departmentId);
+        if (employee != null && department != null) {
+            employee.setDepartment(department);
+            employeeService.save(employee);
+        }
+        return "redirect:/employees";
     }
 
     @GetMapping("/delete")
