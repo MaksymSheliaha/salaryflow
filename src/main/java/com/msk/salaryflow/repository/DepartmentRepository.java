@@ -11,8 +11,12 @@ import java.util.UUID;
 
 public interface DepartmentRepository extends JpaRepository<Department, UUID> {
 
-    @Query(value = "SELECT * FROM department d WHERE " +
-            "(LOWER(d.name) || ' ' || LOWER(d.location)) LIKE LOWER(CONCAT('%', :searchTerm, '%'))",
+    @Query(value =
+            """
+                SELECT * FROM department d WHERE
+                LOWER(d.name) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+                OR LOWER(d.location) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+            """,
             nativeQuery = true)
     Page<Department> searchDepartments(@Param("searchTerm") String searchTerm, Pageable pageable);
 }

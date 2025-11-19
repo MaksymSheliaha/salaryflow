@@ -42,7 +42,11 @@ public class DepartmentService {
             return findAll(request.getSearchTerm(), request.getPageable()).map(this::map);
         }
 
-        return departmentInfoRepository.findAll(request.getPageable());
+        if(request.getSearchTerm() == null || request.getSearchTerm().trim().isEmpty()){
+            return departmentInfoRepository.findAll(request.getPageable());
+        }
+
+        return departmentInfoRepository.searchDepartments(request.getSearchTerm(), request.getPageable());
     }
 
     @CacheEvict(value = {"department", "department_pages"}, allEntries = true)
