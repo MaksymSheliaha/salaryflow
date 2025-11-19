@@ -1,6 +1,8 @@
 package com.msk.salaryflow.controller;
 
 import com.msk.salaryflow.entity.Department;
+import com.msk.salaryflow.entity.DepartmentInfo;
+import com.msk.salaryflow.model.DepartmentSearchRequest;
 import com.msk.salaryflow.service.DepartmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,8 +22,11 @@ public class DepartmentController {
     @GetMapping
     private String getDepartments(Model model,
                                   @RequestParam(value = "q", required = false) String searchTerm,
+                                  @RequestParam(value = "empInfo", defaultValue = "false") Boolean empInfo,
                                   Pageable pageable){
-        Page<Department> page = departmentService.findAll(searchTerm, pageable);
+
+        DepartmentSearchRequest request = new DepartmentSearchRequest(pageable, searchTerm, empInfo);
+        Page<DepartmentInfo> page = departmentService.findAll(request);
         model.addAttribute("departments", page.getContent());
         model.addAttribute("page", page);
         return "departments/department-list";
