@@ -3,9 +3,9 @@ package com.msk.salaryflow.controller;
 import com.msk.salaryflow.entity.Department;
 import com.msk.salaryflow.entity.DepartmentInfo;
 import com.msk.salaryflow.model.DepartmentSearchRequest;
+import com.msk.salaryflow.model.PageResponse;
 import com.msk.salaryflow.service.DepartmentService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -26,8 +26,8 @@ public class DepartmentController {
                                   Pageable pageable){
 
         DepartmentSearchRequest request = new DepartmentSearchRequest(pageable, searchTerm, empInfo);
-        Page<DepartmentInfo> page = departmentService.findAll(request);
-        model.addAttribute("departments", page.getContent());
+            PageResponse<DepartmentInfo> page = departmentService.findAll(request);
+        model.addAttribute("departments", page.content());
         model.addAttribute("page", page);
         return "departments/department-list";
     }
