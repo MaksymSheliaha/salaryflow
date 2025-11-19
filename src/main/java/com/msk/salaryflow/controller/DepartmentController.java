@@ -34,8 +34,8 @@ public class DepartmentController {
 
     @PostMapping("/save")
     private String save(@ModelAttribute("department") Department department){
-        departmentService.save(department);
-        return "redirect:/departments";
+        Department saved = departmentService.save(department);
+        return "redirect:/departments/"+saved.getId();
     }
 
     @GetMapping("/add")
