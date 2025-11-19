@@ -26,7 +26,7 @@ public class DepartmentController {
                                   Pageable pageable){
 
         DepartmentSearchRequest request = new DepartmentSearchRequest(pageable, searchTerm, empInfo);
-            PageResponse<DepartmentInfo> page = departmentService.findAll(request);
+        PageResponse<DepartmentInfo> page = departmentService.findAll(request);
         model.addAttribute("departments", page.content());
         model.addAttribute("page", page);
         return "departments/department-list";
@@ -56,12 +56,24 @@ public class DepartmentController {
     }
 
     @GetMapping("/{id}")
-    private String getDepartment(Model model, @PathVariable("id") UUID id){
-        Department department = departmentService.findById(id);
-        if(department==null){
-            return "redirect:/departments";
+    private String getDepartment(Model model,
+                                 @PathVariable("id") UUID id,
+                                 @RequestParam(value = "empInfo", defaultValue = "false") Boolean empInfo){
+        if (Boolean.TRUE.equals(empInfo)) {
+            DepartmentInfo info = departmentService.findInfoById(id);
+            if (info == null) {
+                return "redirect:/departments";
+            }
+            model.addAttribute("department", info);
+            model.addAttribute("empInfo", true);
+        } else {
+            Department department = departmentService.findById(id);
+            if(department==null){
+                return "redirect:/departments";
+            }
+            model.addAttribute("department", department);
+            model.addAttribute("empInfo", false);
         }
-        model.addAttribute("department", department);
         return "departments/department-info";
     }
 
