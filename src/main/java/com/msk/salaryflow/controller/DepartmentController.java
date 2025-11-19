@@ -1,9 +1,11 @@
 package com.msk.salaryflow.controller;
 
 import com.msk.salaryflow.entity.Department;
+import com.msk.salaryflow.entity.DepartmentInfo;
+import com.msk.salaryflow.model.DepartmentSearchRequest;
+import com.msk.salaryflow.model.PageResponse;
 import com.msk.salaryflow.service.DepartmentService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -18,9 +20,15 @@ public class DepartmentController {
     private final DepartmentService departmentService;
 
     @GetMapping
-    private String getDepartments(Model model, Pageable pageable){
-        Page<Department> departments = departmentService.findAll(pageable);
-        model.addAttribute("departments", departments.toList());
+    private String getDepartments(Model model,
+                                  @RequestParam(value = "q", required = false) String searchTerm,
+                                  @RequestParam(value = "empInfo", defaultValue = "false") Boolean empInfo,
+                                  Pageable pageable){
+
+        DepartmentSearchRequest request = new DepartmentSearchRequest(pageable, searchTerm, empInfo);
+            PageResponse<DepartmentInfo> page = departmentService.findAll(request);
+        model.addAttribute("departments", page.content());
+        model.addAttribute("page", page);
         return "departments/department-list";
     }
 

@@ -1,6 +1,7 @@
 package com.msk.salaryflow.repository;
 
 import com.msk.salaryflow.entity.Department;
+import com.msk.salaryflow.entity.DepartmentInfo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,14 +10,14 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.UUID;
 
-public interface DepartmentRepository extends JpaRepository<Department, UUID> {
-
+public interface DepartmentInfoRepository extends JpaRepository<DepartmentInfo, UUID> {
     @Query(value =
             """
-                SELECT * FROM department d WHERE
+                SELECT * FROM department_stats d WHERE
                 LOWER(d.name) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
                 OR LOWER(d.location) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
             """,
             nativeQuery = true)
-    Page<Department> searchDepartments(@Param("searchTerm") String searchTerm, Pageable pageable);
+    Page<DepartmentInfo> searchDepartments(@Param("searchTerm") String searchTerm, Pageable pageable);
+
 }
