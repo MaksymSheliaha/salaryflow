@@ -21,7 +21,6 @@ public class GlobalExceptionHandler {
     public String handleBadRequest(Exception ex, HttpServletRequest request, Model model) {
         model.addAttribute("status", HttpStatus.BAD_REQUEST.value());
         model.addAttribute("error", "Bad request");
-        model.addAttribute("message", ex.getMessage());
         model.addAttribute("path", request.getRequestURI());
         return "error/custom-error";
     }
@@ -31,7 +30,6 @@ public class GlobalExceptionHandler {
     public String handleNotFound(Exception ex, HttpServletRequest request, Model model) {
         model.addAttribute("status", HttpStatus.NOT_FOUND.value());
         model.addAttribute("error", "Not found");
-        model.addAttribute("message", ex.getMessage());
         model.addAttribute("path", request.getRequestURI());
         return "error/custom-error";
     }
@@ -41,7 +39,6 @@ public class GlobalExceptionHandler {
         HttpStatus status = ex.getStatusCode() instanceof HttpStatus ? (HttpStatus) ex.getStatusCode() : HttpStatus.INTERNAL_SERVER_ERROR;
         model.addAttribute("status", status.value());
         model.addAttribute("error", status.getReasonPhrase());
-        model.addAttribute("message", ex.getReason());
         model.addAttribute("path", request.getRequestURI());
         return "error/custom-error";
     }
@@ -51,7 +48,6 @@ public class GlobalExceptionHandler {
     public String handleGeneric(Exception ex, HttpServletRequest request, Model model) {
         model.addAttribute("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         model.addAttribute("error", "Unexpected error");
-        model.addAttribute("message", ex.getMessage());
         model.addAttribute("path", request.getRequestURI());
         return "error/custom-error";
     }
