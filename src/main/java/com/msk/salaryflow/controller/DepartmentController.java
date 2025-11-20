@@ -34,6 +34,7 @@ public class DepartmentController {
         model.addAttribute("departments", page.content());
         model.addAttribute("page", page);
         model.addAttribute("employeeId", employeeId);
+        model.addAttribute("empInfoEnabled", Boolean.TRUE.equals(empInfo));
         return "departments/department-list";
     }
 

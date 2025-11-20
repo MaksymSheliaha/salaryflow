@@ -14,6 +14,9 @@
 <body>
 
 <div class="container" >
+    <!-- hidden flag to indicate whether employee info is loaded -->
+    <input type="hidden" id="empInfoEnabled" th:value="${empInfoEnabled}" />
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3>Department Directory</h3>
         <div>
@@ -127,12 +130,19 @@
                            empActive=${#strings.startsWith(cs,'employees,')},
                            empDesc=${empActive ? #strings.contains(cs,',desc') : false},
                            nextDir=${(empActive and not empDesc) ? 'desc' : 'asc'}">
-                <a th:href="@{/departments(sort=${'employees,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null}, employeeId=${employeeId != null ? employeeId : null})}"
+                <a th:if="${empInfoEnabled}"
+                   th:href="@{/departments(sort=${'employees,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null}, employeeId=${employeeId != null ? employeeId : null})}"
                    class="link-light text-decoration-none">
                     Employees
                     <span style="display:inline-block; width: 12px;"
                           th:text="${empActive} ? (${empDesc} ? '↓' : '↑') : ''">
                     </span>
+                </a>
+                <a th:unless="${empInfoEnabled}"
+                   href="#"
+                   class="link-light text-decoration-none js-empinfo-header"
+                   data-emp-column="employees">
+                    Employees
                 </a>
             </th>
 
@@ -141,12 +151,19 @@
                            salActive=${#strings.startsWith(cs,'salary,')},
                            salDesc=${salActive ? #strings.contains(cs,',desc') : false},
                            nextDir=${(salActive and not salDesc) ? 'desc' : 'asc'}">
-                <a th:href="@{/departments(sort=${'salary,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null}, employeeId=${employeeId != null ? employeeId : null})}"
+                <a th:if="${empInfoEnabled}"
+                   th:href="@{/departments(sort=${'salary,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null}, employeeId=${employeeId != null ? employeeId : null})}"
                    class="link-light text-decoration-none">
                     Average salary
                     <span style="display:inline-block; width: 12px;"
                           th:text="${salActive} ? (${salDesc} ? '↓' : '↑') : ''">
                     </span>
+                </a>
+                <a th:unless="${empInfoEnabled}"
+                   href="#"
+                   class="link-light text-decoration-none js-empinfo-header"
+                   data-emp-column="salary">
+                    Average salary
                 </a>
             </th>
 
@@ -155,12 +172,19 @@
                            ageActive=${#strings.startsWith(cs,'age,')},
                            ageDesc=${ageActive ? #strings.contains(cs,',desc') : false},
                            nextDir=${(ageActive and not ageDesc) ? 'desc' : 'asc'}">
-                <a th:href="@{/departments(sort=${'age,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null}, employeeId=${employeeId != null ? employeeId : null})}"
+                <a th:if="${empInfoEnabled}"
+                   th:href="@{/departments(sort=${'age,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null}, employeeId=${employeeId != null ? employeeId : null})}"
                    class="link-light text-decoration-none">
                     Average age
                     <span style="display:inline-block; width: 12px;"
                           th:text="${ageActive} ? (${ageDesc} ? '↓' : '↑') : ''">
                     </span>
+                </a>
+                <a th:unless="${empInfoEnabled}"
+                   href="#"
+                   class="link-light text-decoration-none js-empinfo-header"
+                   data-emp-column="age">
+                    Average age
                 </a>
             </th>
 
@@ -169,12 +193,19 @@
                            expActive=${#strings.startsWith(cs,'experience,')},
                            expDesc=${expActive ? #strings.contains(cs,',desc') : false},
                            nextDir=${(expActive and not expDesc) ? 'desc' : 'asc'}">
-                <a th:href="@{/departments(sort=${'experience,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null}, employeeId=${employeeId != null ? employeeId : null})}"
+                <a th:if="${empInfoEnabled}"
+                   th:href="@{/departments(sort=${'experience,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null}, employeeId=${employeeId != null ? employeeId : null})}"
                    class="link-light text-decoration-none">
                     Average experience
                     <span style="display:inline-block; width: 12px;"
                           th:text="${expActive} ? (${expDesc} ? '↓' : '↑') : ''">
                     </span>
+                </a>
+                <a th:unless="${empInfoEnabled}"
+                   href="#"
+                   class="link-light text-decoration-none js-empinfo-header"
+                   data-emp-column="experience">
+                    Average experience
                 </a>
             </th>
 
@@ -300,6 +331,19 @@
         const ALWAYS_VISIBLE = 'name';
         const EMP_INFO_COLUMNS = ['employees', 'salary', 'age', 'experience'];
 
+        function forceReloadWithEmpInfo() {
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('empInfo', 'true');
+                window.location.href = url.toString();
+            } catch (e) {
+                if (window.location.search.indexOf('empInfo=') === -1) {
+                    const sep = window.location.search ? '&' : '?';
+                    window.location.href = window.location.href + sep + 'empInfo=true';
+                }
+            }
+        }
+
         function normalizeVisibleColumns(cols) {
             const set = new Set(cols || []);
             // Name column must always be visible
@@ -351,20 +395,13 @@
                 return; // all values already present
             }
 
-            try {
-                const url = new URL(window.location.href);
-                url.searchParams.set('empInfo', 'true');
-                window.location.href = url.toString();
-            } catch (e) {
-                // fallback: naive append
-                if (window.location.search.indexOf('empInfo=') === -1) {
-                    const sep = window.location.search ? '&' : '?';
-                    window.location.href = window.location.href + sep + 'empInfo=true';
-                }
-            }
+            forceReloadWithEmpInfo();
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            const empInfoInput = document.getElementById('empInfoEnabled');
+            const empInfoEnabled = empInfoInput && empInfoInput.value === 'true';
+
             let visibleCols = defaultColumns.slice();
             try {
                 const stored = localStorage.getItem(STORAGE_KEY);
@@ -380,6 +417,12 @@
 
             applyVisibility(visibleCols);
             syncCheckboxes(visibleCols);
+
+            // якщо на старті вже вибрані якісь employee-колонки і empInfo ще не ввімкнено — одразу перезавантажуємо з empInfo=true
+            if (!empInfoEnabled && EMP_INFO_COLUMNS.some(col => visibleCols.includes(col))) {
+                forceReloadWithEmpInfo();
+                return; // далі скрипт можна не виконувати, все одно буде reload
+            }
 
             const checkboxes = document.querySelectorAll('.js-column-toggle');
             checkboxes.forEach(cb => {
@@ -408,6 +451,18 @@
                     }
                 });
             });
+
+            // If employee info is not enabled yet, clicking on employee-related header should just enable it
+            if (!empInfoEnabled) {
+                const empHeaders = document.querySelectorAll('a.js-empinfo-header');
+                empHeaders.forEach(header => {
+                    header.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        forceReloadWithEmpInfo();
+                    });
+                });
+            }
         });
     })();
 </script>
