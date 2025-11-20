@@ -10,26 +10,80 @@
 
 <div class="container mt-4">
 
-    <h3>Department Information</h3>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Department Information</h3>
+        <div class="btn-group" role="group">
+            <a th:href="@{/departments}" class="btn btn-secondary btn-sm">Back to List</a>
+            <a th:href="@{/departments/update(departmentId=${department.id})}"
+               class="btn btn-outline-primary btn-sm">Edit</a>
+        </div>
+    </div>
 
-    <div class="card mt-3">
+    <div class="card mb-3">
         <div class="card-body">
-
             <h5 class="card-title" th:text="${department.name}">Department Name</h5>
 
-            <p class="card-text">
+            <p class="card-text mb-1">
                 <strong>Location:</strong>
                 <span th:text="${department.location}">Location</span>
             </p>
 
+            <p class="card-text mb-0">
+                <strong>ID:</strong>
+                <span th:text="${department.id}">ID</span>
+            </p>
         </div>
     </div>
 
-    <a th:href="@{/departments}" class="btn btn-secondary mt-3">
+    <!-- Employee statistics block -->
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Employee statistics</span>
+            <a th:if="${empInfo == null or !empInfo}"
+               th:href="@{/departments/{id}(id=${department.id}, empInfo=true)}"
+               class="btn btn-sm btn-outline-secondary">
+                Show employee data
+            </a>
+        </div>
+        <div class="card-body">
+            <div th:if="${empInfo != null and empInfo}">
+                <table class="table table-bordered mb-0">
+                    <tbody>
+                    <tr>
+                        <th scope="row" style="width: 40%">Employees</th>
+                        <td th:text="${department.employees != null} ? ${department.employees} : 'N/A'"></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Average salary</th>
+                        <td th:text="${department.salary != null} ? ${#numbers.formatDecimal(department.salary, 1, 2)} : 'N/A'"></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Average age</th>
+                        <td th:text="${department.age != null} ? ${#numbers.formatDecimal(department.age, 1, 2)} : 'N/A'"></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Average experience</th>
+                        <td th:text="${department.experience != null} ? ${#numbers.formatDecimal(department.experience, 1, 2)} : 'N/A'"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div th:unless="${empInfo != null and empInfo}">
+                <p class="mb-0 text-muted">
+                    Employee statistics are not loaded. Click "Show employee data" to load aggregated information
+                    about employees in this department.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <a th:href="@{/departments}" class="btn btn-secondary mt-2">
         Back to List
     </a>
 
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
 
 </body>
 </html>

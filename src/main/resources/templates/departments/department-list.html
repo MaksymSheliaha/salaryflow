@@ -41,6 +41,7 @@
         <input type="hidden" name="sort" th:if="${param.sort != null}" th:value="${param.sort[0]}"/>
         <input type="hidden" name="size" th:if="${param.size != null}" th:value="${param.size[0]}"/>
         <input type="hidden" name="empInfo" th:if="${param.empInfo != null}" th:value="${param.empInfo[0]}"/>
+        <input type="hidden" name="employeeId" th:if="${employeeId != null}" th:value="${employeeId}"/>
     </form>
 
 <!--    <a th:href="@{/departments/add}"-->
@@ -98,7 +99,7 @@
                            nameActive=${#strings.startsWith(cs,'name,')},
                            nameDesc=${nameActive ? #strings.contains(cs,',desc') : false},
                            nextDir=${(nameActive and not nameDesc) ? 'desc' : 'asc'}">
-                <a th:href="@{/departments(sort=${'name,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null})}"
+                <a th:href="@{/departments(sort=${'name,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null}, employeeId=${employeeId != null ? employeeId : null})}"
                    class="link-light text-decoration-none">
                     Name
                     <span style="display:inline-block; width: 12px;"
@@ -112,7 +113,7 @@
                            locActive=${#strings.startsWith(cs,'location,')},
                            locDesc=${locActive ? #strings.contains(cs,',desc') : false},
                            nextDir=${(locActive and not locDesc) ? 'desc' : 'asc'}">
-                <a th:href="@{/departments(sort=${'location,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null})}"
+                <a th:href="@{/departments(sort=${'location,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null}, employeeId=${employeeId != null ? employeeId : null})}"
                    class="link-light text-decoration-none">
                     Location
                     <span style="display:inline-block; width: 12px;"
@@ -126,7 +127,7 @@
                            empActive=${#strings.startsWith(cs,'employees,')},
                            empDesc=${empActive ? #strings.contains(cs,',desc') : false},
                            nextDir=${(empActive and not empDesc) ? 'desc' : 'asc'}">
-                <a th:href="@{/departments(sort=${'employees,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null})}"
+                <a th:href="@{/departments(sort=${'employees,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null}, employeeId=${employeeId != null ? employeeId : null})}"
                    class="link-light text-decoration-none">
                     Employees
                     <span style="display:inline-block; width: 12px;"
@@ -140,7 +141,7 @@
                            salActive=${#strings.startsWith(cs,'salary,')},
                            salDesc=${salActive ? #strings.contains(cs,',desc') : false},
                            nextDir=${(salActive and not salDesc) ? 'desc' : 'asc'}">
-                <a th:href="@{/departments(sort=${'salary,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null})}"
+                <a th:href="@{/departments(sort=${'salary,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null}, employeeId=${employeeId != null ? employeeId : null})}"
                    class="link-light text-decoration-none">
                     Average salary
                     <span style="display:inline-block; width: 12px;"
@@ -154,7 +155,7 @@
                            ageActive=${#strings.startsWith(cs,'age,')},
                            ageDesc=${ageActive ? #strings.contains(cs,',desc') : false},
                            nextDir=${(ageActive and not ageDesc) ? 'desc' : 'asc'}">
-                <a th:href="@{/departments(sort=${'age,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null})}"
+                <a th:href="@{/departments(sort=${'age,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null}, employeeId=${employeeId != null ? employeeId : null})}"
                    class="link-light text-decoration-none">
                     Average age
                     <span style="display:inline-block; width: 12px;"
@@ -168,7 +169,7 @@
                            expActive=${#strings.startsWith(cs,'experience,')},
                            expDesc=${expActive ? #strings.contains(cs,',desc') : false},
                            nextDir=${(expActive and not expDesc) ? 'desc' : 'asc'}">
-                <a th:href="@{/departments(sort=${'experience,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null})}"
+                <a th:href="@{/departments(sort=${'experience,' + nextDir}, size=${param.size != null ? param.size[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null}, employeeId=${employeeId != null ? employeeId : null})}"
                    class="link-light text-decoration-none">
                     Average experience
                     <span style="display:inline-block; width: 12px;"
@@ -208,6 +209,15 @@
                    class="btn btn-outline-primary btn-sm">
                     View
                 </a>
+                <form th:if="${employeeId != null}"
+                      th:action="@{/departments/attach}"
+                      method="post" class="d-inline">
+                    <input type="hidden" name="departmentId" th:value="${department.id}" />
+                    <input type="hidden" name="employeeId" th:value="${employeeId}" />
+                    <button type="submit" class="btn btn-outline-success btn-sm">
+                        Attach
+                    </button>
+                </form>
             </td>
 
         </tr>
@@ -220,7 +230,7 @@
         <div class="btn-group" role="group" aria-label="Pagination navigation">
             <a th:if="${page.hasPrevious()}"
                class="btn btn-outline-secondary btn-sm"
-               th:href="@{/departments(page=${page.number - 1}, size=${page.size}, sort=${param.sort != null ? param.sort[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null})}">
+               th:href="@{/departments(page=${page.number - 1}, size=${page.size}, sort=${param.sort != null ? param.sort[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null}, employeeId=${employeeId != null ? employeeId : null})}">
                 Previous
             </a>
             <span th:unless="${page.hasPrevious()}"
@@ -229,7 +239,7 @@
             </span>
             <a th:if="${page.hasNext()}"
                class="btn btn-outline-secondary btn-sm"
-               th:href="@{/departments(page=${page.number + 1}, size=${page.size}, sort=${param.sort != null ? param.sort[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null})}">
+               th:href="@{/departments(page=${page.number + 1}, size=${page.size}, sort=${param.sort != null ? param.sort[0] : null}, q=${param.q != null ? param.q[0] : null}, empInfo=${param.empInfo != null ? param.empInfo[0] : null}, employeeId=${employeeId != null ? employeeId : null})}">
                 Next
             </a>
             <span th:unless="${page.hasNext()}"
@@ -256,6 +266,7 @@
             <input type="hidden" name="sort" th:if="${param.sort != null}" th:value="${param.sort[0]}">
             <input type="hidden" name="q" th:if="${param.q != null}" th:value="${param.q[0]}">
             <input type="hidden" name="empInfo" th:if="${param.empInfo != null}" th:value="${param.empInfo[0]}">
+            <input type="hidden" name="employeeId" th:if="${employeeId != null}" th:value="${employeeId}">
             <button type="submit" class="btn btn-outline-secondary btn-sm">Go</button>
         </form>
 
@@ -273,6 +284,7 @@
             <input type="hidden" name="sort" th:if="${param.sort != null}" th:value="${param.sort[0]}">
             <input type="hidden" name="q" th:if="${param.q != null}" th:value="${param.q[0]}">
             <input type="hidden" name="empInfo" th:if="${param.empInfo != null}" th:value="${param.empInfo[0]}">
+            <input type="hidden" name="employeeId" th:if="${employeeId != null}" th:value="${employeeId}">
             <button type="submit" class="btn btn-outline-secondary btn-sm">Apply</button>
         </form>
     </div>

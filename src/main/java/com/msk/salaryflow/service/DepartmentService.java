@@ -61,6 +61,11 @@ public class DepartmentService {
         return departmentRepository.findById(id).orElse(null);
     }
 
+    // Load aggregated department info (including employee-related stats) from department_stats view
+    public DepartmentInfo findInfoById(UUID id) {
+        return departmentInfoRepository.findById(id).orElse(null);
+    }
+
     private DepartmentInfo map(Department department) {
         DepartmentInfo info = new DepartmentInfo();
         info.setId(department.getId());

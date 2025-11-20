@@ -91,9 +91,15 @@
         </div>
     </div>
 
-    <a th:href="@{/employees}" class="btn btn-secondary mt-3">
-        Back to List
-    </a>
+    <div class="mt-3 d-flex gap-2">
+        <a th:href="@{/employees}" class="btn btn-secondary">
+            Back to List
+        </a>
+        <a th:href="@{/departments(employeeId=${employee.id})}"
+           class="btn btn-outline-success">
+            Attach to Department
+        </a>
+    </div>
 
 </div>
 
