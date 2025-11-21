@@ -9,17 +9,32 @@
 <body>
 <div class="container mt-4">
     <h2 th:text="${absence.id} != null ? 'Edit Absence' : 'Add Absence'">Form</h2>
+
     <form th:action="@{/absences/save}" th:object="${absence}" method="post">
         <input type="hidden" th:field="*{id}"/>
 
-        <!-- Employee ID -->
-        <div class="mb-3">
-            <label class="form-label">Employee ID</label>
-            <input class="form-control" type="text" th:field="*{employeeId}" placeholder="employee UUID"/>
-            <div class="text-danger" th:if="${#fields.hasErrors('employeeId')}" th:errors="*{employeeId}"></div>
+        <div class="card mb-3 bg-light">
+            <div class="card-body">
+                <label class="form-label fw-bold">Employee</label>
+
+                <div class="input-group mb-2">
+                    <span class="input-group-text">UUID</span>
+                    <input class="form-control" type="text" th:field="*{employeeId}"
+                           readonly placeholder="Select an employee..." required/>
+
+                    <a th:href="@{/employees(mode='select')}" class="btn btn-outline-primary">
+                        Select Employee from List
+                    </a>
+                </div>
+
+                <div th:if="${selectedEmployeeName != null}" class="alert alert-success py-2 mb-0">
+                    Selected: <strong th:text="${selectedEmployeeName}">John Doe</strong>
+                </div>
+
+                <div class="text-danger" th:if="${#fields.hasErrors('employeeId')}" th:errors="*{employeeId}"></div>
+            </div>
         </div>
 
-        <!-- Type -->
         <div class="mb-3">
             <label class="form-label">Type</label>
             <select class="form-select" th:field="*{type}">
@@ -28,7 +43,6 @@
             <div class="text-danger" th:if="${#fields.hasErrors('type')}" th:errors="*{type}"></div>
         </div>
 
-        <!-- Dates -->
         <div class="row">
             <div class="col mb-3">
                 <label class="form-label">Start Date</label>
@@ -42,13 +56,11 @@
             </div>
         </div>
 
-        <!-- Comment -->
         <div class="mb-3">
             <label class="form-label">Comment</label>
             <textarea class="form-control" th:field="*{comment}" rows="3"></textarea>
         </div>
 
-        <!-- Buttons -->
         <div class="d-flex gap-2">
             <button class="btn btn-primary" type="submit">Save</button>
             <a class="btn btn-secondary" th:href="@{/absences}">Cancel</a>

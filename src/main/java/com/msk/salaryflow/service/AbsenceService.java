@@ -1,102 +1,157 @@
 package com.msk.salaryflow.service;
 
 import com.msk.salaryflow.entity.Absence;
+import com.msk.salaryflow.entity.AbsenceType;
+import com.msk.salaryflow.model.AbsenceResponse;
 import com.msk.salaryflow.repository.AbsenceRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import com.msk.salaryflow.repository.EmployeeRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
-import java.io.Serializable;
+import java.util.Collections; // Додано імпорт
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class AbsenceService {
 
-    private final AbsenceRepository repository;
-    private final CacheManager cacheManager;
+    private final AbsenceRepository absenceRepository;
+    private final EmployeeRepository employeeRepository;
 
-    @Autowired
-    public AbsenceService(AbsenceRepository repository, @Qualifier("mongoRedisCacheManager") CacheManager cacheManager) {
-        this.repository = repository;
-        this.cacheManager = cacheManager;
-    }
+    // Основний метод для таблиці з In-Memory сортуванням
+    public Page<AbsenceResponse> findAll(String searchTerm, AbsenceType typeFilter, Pageable pageable) {
+        // 1. Дістаємо ВСІ записи з MongoDB
+        List<Absence> allAbsences;
 
-    public Page<Absence> findAll(Pageable pageable) {
-        String key = pageable.getPageNumber() + "-" + pageable.getPageSize();
-        Cache cache = cacheManager.getCache("absence_pages");
-        if (cache != null) {
-            try {
-                PageDto dto = cache.get(key, PageDto.class);
-                if (dto != null) {
-                    PageRequest pr = PageRequest.of(dto.number, dto.size);
-                    return new PageImpl<>(dto.content, pr, dto.totalElements);
-                }
-            } catch (Exception ex) {
-                try { cache.evict(key); } catch (Exception ignore) {}
-            }
+        if (typeFilter != null) {
+            // Тут можна було б використати метод репозиторію, але для простоти беремо все
+            allAbsences = absenceRepository.findAll();
+        } else {
+            allAbsences = absenceRepository.findAll();
         }
 
-        Page<Absence> page = repository.findAll(pageable);
+        // 2. Конвертуємо ВСЕ в DTO, підтягуємо імена і фільтруємо
+        List<AbsenceResponse> fullList = allAbsences.stream()
+                .map(this::mapToResponse)
+                .filter(dto -> {
+                    // Фільтрація по Типу
+                    if (typeFilter != null && dto.getType() != typeFilter) return false;
 
-        if (cache != null) {
-            PageDto dto = new PageDto(page.getContent(), page.getTotalElements(),
-                    page.getNumber(), page.getSize(), page.getTotalPages(),
-                    page.isFirst(), page.isLast());
-            try { cache.put(key, dto); } catch (Exception ignore) {}
+                    // Фільтрація по Пошуку (Ім'я/Прізвище)
+                    if (searchTerm != null && !searchTerm.isEmpty()) {
+                        String fullName = (dto.getEmployeeFirstName() + " " + dto.getEmployeeLastName());
+                        if (fullName == null) return false;
+                        return fullName.toLowerCase().contains(searchTerm.toLowerCase());
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
+
+        // 3. Сортування в Java (ВРУЧНУ)
+        String sortProperty = "startDate"; // за замовчуванням
+        Sort.Direction sortDirection = Sort.Direction.DESC;
+
+        if (pageable.getSort().isSorted()) {
+            Sort.Order order = pageable.getSort().iterator().next();
+            sortProperty = order.getProperty();
+            sortDirection = order.getDirection();
         }
 
-        return page;
+        // Компаратор для сортування
+        Comparator<AbsenceResponse> comparator;
+
+        switch (sortProperty) {
+            case "employeeFirstName":
+                comparator = Comparator.comparing(AbsenceResponse::getEmployeeFirstName, Comparator.nullsLast(String::compareToIgnoreCase));
+                break;
+            case "employeeLastName":
+                comparator = Comparator.comparing(AbsenceResponse::getEmployeeLastName, Comparator.nullsLast(String::compareToIgnoreCase));
+                break;
+            case "type":
+                comparator = Comparator.comparing(AbsenceResponse::getType);
+                break;
+            case "endDate":
+                comparator = Comparator.comparing(AbsenceResponse::getEndDate);
+                break;
+            case "startDate":
+            default:
+                comparator = Comparator.comparing(AbsenceResponse::getStartDate);
+                break;
+        }
+
+        // Розвертаємо, якщо DESC
+        if (sortDirection == Sort.Direction.DESC) {
+            comparator = comparator.reversed();
+        }
+
+        fullList.sort(comparator);
+
+        // 4. Пагінація (ріжемо список)
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), fullList.size());
+
+        List<AbsenceResponse> pagedList;
+        if (start > fullList.size()) {
+            pagedList = Collections.emptyList();
+        } else {
+            pagedList = fullList.subList(start, end);
+        }
+
+        // Повертаємо об'єкт Page
+        return new PageImpl<>(pagedList, pageable, fullList.size());
     }
 
-    @Cacheable(value = "absence", key = "#id", cacheManager = "mongoRedisCacheManager")
+    public AbsenceResponse findByIdResponse(UUID id) {
+        return absenceRepository.findById(id).map(this::mapToResponse).orElse(null);
+    }
+
     public Optional<Absence> findById(UUID id) {
-        return repository.findById(id);
+        return absenceRepository.findById(id);
     }
 
-    @CacheEvict(value = {"absence", "absence_pages"}, allEntries = true, cacheManager = "mongoRedisCacheManager")
     public Absence save(Absence absence) {
         if (absence.getId() == null) {
             absence.setId(UUID.randomUUID());
         }
-        return repository.save(absence);
+        return absenceRepository.save(absence);
     }
 
-    @CacheEvict(value = {"absence", "absence_pages"}, allEntries = true, cacheManager = "mongoRedisCacheManager")
     public void deleteById(UUID id) {
-        repository.deleteById(id);
+        absenceRepository.deleteById(id);
     }
 
-    static class PageDto implements Serializable {
-        private static final long serialVersionUID = 1L;
-        public List<Absence> content;
-        public long totalElements;
-        public int number;
-        public int size;
-        public int totalPages;
-        public boolean first;
-        public boolean last;
+    // Приватний метод для перетворення
+    private AbsenceResponse mapToResponse(Absence absence) {
+        AbsenceResponse response = new AbsenceResponse();
+        response.setId(absence.getId());
+        response.setType(absence.getType());
+        response.setStartDate(absence.getStartDate());
+        response.setEndDate(absence.getEndDate());
+        response.setComment(absence.getComment());
 
-        public PageDto() {}
-
-        public PageDto(List<Absence> content, long totalElements, int number, int size,
-                       int totalPages, boolean first, boolean last) {
-            this.content = content;
-            this.totalElements = totalElements;
-            this.number = number;
-            this.size = size;
-            this.totalPages = totalPages;
-            this.first = first;
-            this.last = last;
+        if (absence.getEmployeeId() != null) {
+            try {
+                employeeRepository.findById(UUID.fromString(absence.getEmployeeId()))
+                        .ifPresentOrElse(employee -> {
+                            response.setEmployeeFirstName(employee.getFirstName());
+                            response.setEmployeeLastName(employee.getLastName());
+                        }, () -> {
+                            response.setEmployeeFirstName("Unknown");
+                            response.setEmployeeLastName("(ID not found)");
+                        });
+            } catch (IllegalArgumentException e) {
+                response.setEmployeeFirstName("Invalid");
+                response.setEmployeeLastName("UUID");
+            }
+        } else {
+            response.setEmployeeFirstName("-");
+            response.setEmployeeLastName("-");
         }
+        return response;
     }
 }
