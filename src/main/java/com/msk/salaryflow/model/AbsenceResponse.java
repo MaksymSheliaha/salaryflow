@@ -18,6 +18,6 @@ public class AbsenceResponse {
     private AbsenceType type;
     private LocalDate startDate;
     private LocalDate endDate;
-    // Коментар тут є, але в таблиці ми його показувати не будемо, тільки в View
     private String comment;
+    private Double sickPay;
 }
