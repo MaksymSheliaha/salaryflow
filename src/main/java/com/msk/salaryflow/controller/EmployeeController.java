@@ -4,8 +4,8 @@ import com.msk.salaryflow.entity.Department;
 import com.msk.salaryflow.entity.Employee;
 import com.msk.salaryflow.entity.Gender;
 import com.msk.salaryflow.entity.Position;
-import com.msk.salaryflow.repository.DepartmentRepository;
-import com.msk.salaryflow.repository.EmployeeRepository;
+import com.msk.salaryflow.service.EmployeeService;
+import com.msk.salaryflow.service.DepartmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,12 +22,12 @@ import java.util.UUID;
 @Controller
 @RequiredArgsConstructor
 public class EmployeeController {
-    private final EmployeeRepository employeeRepository;
-    private final DepartmentRepository departmentRepository;
+    private final EmployeeService employeeService;
+    private final DepartmentService departmentService;
 
     @GetMapping
     private String getEmployees(Model model, Pageable pageable){
-        Page<Employee> employees = employeeRepository.findAll(pageable);
+        Page<Employee> employees = employeeService.findAll(pageable);
         model.addAttribute("employees", employees.toList());
         return "employees/employee-list";
     }
@@ -36,7 +36,6 @@ public class EmployeeController {
     private String save(@ModelAttribute("employee") Employee employee,
                         @RequestParam(value = "birthdayDate", required = false) String birthdayDate){
 
-        // Конвертируем birthday из String в Instant если нужно
         if (birthdayDate != null && !birthdayDate.isEmpty()) {
             LocalDate localDate = LocalDate.parse(birthdayDate);
             employee.setBirthday(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
@@ -46,7 +45,7 @@ public class EmployeeController {
             employee.setHireDate(Instant.now());
         }
 
-        employeeRepository.save(employee);
+        employeeService.save(employee);
         return "redirect:/employees";
     }
 
@@ -59,27 +58,27 @@ public class EmployeeController {
         model.addAttribute("employee", employee);
         model.addAttribute("genders", Gender.values());
         model.addAttribute("positions", Position.values());
-        model.addAttribute("departments", departmentRepository.findAll());
+        model.addAttribute("departments", departmentService.findAll(Pageable.unpaged()).getContent());
         return "employees/employee-form";
     }
 
     @GetMapping("/update")
     private String showFormForUpdate(Model model, @RequestParam("employeeId") UUID id){
-        Employee employee = employeeRepository.findById(id).orElse(null);
+        Employee employee = employeeService.findById(id);
         if(employee == null) return "redirect:/employees";
 
         model.addAttribute("employee", employee);
         model.addAttribute("genders", Gender.values());
         model.addAttribute("positions", Position.values());
-        model.addAttribute("departments", departmentRepository.findAll());
+        model.addAttribute("departments", departmentService.findAll(Pageable.unpaged()).getContent());
         return "employees/employee-form";
     }
 
     @GetMapping("/{id}")
     private String getEmployee(Model model, @PathVariable("id") UUID id){
-        Employee employee = employeeRepository.findById(id).orElse(null);
+        Employee employee = employeeService.findById(id);
         if(employee == null){
-            return "redirect:/employees";
+            return "redirect:/employees/notFound";
         }
         model.addAttribute("employee", employee);
         return "employees/employee-info";
@@ -87,7 +86,7 @@ public class EmployeeController {
 
     @GetMapping("/delete")
     private String delete(@RequestParam("employeeId") UUID employeeId){
-        employeeRepository.deleteById(employeeId);
+        employeeService.deleteById(employeeId);
         return "redirect:/employees";
     }
 }
