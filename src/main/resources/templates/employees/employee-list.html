@@ -8,18 +8,15 @@
 </head>
 <body>
 
+<div th:replace="~{fragments/header :: navbar}"></div>
+
 <div class="container">
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3>Employee Directory</h3>
         <div>
-            <a th:href="@{/employees/add}" class="btn btn-primary btn-sm me-2">
+            <a th:href="@{/employees/add}" class="btn btn-primary btn-sm">
                 Add Employee
-            </a>
-            <a th:href="@{/departments}" class="btn btn-outline-secondary btn-sm me-2">
-                Departments
-            </a>
-            <a th:href="@{/absences}" class="btn btn-outline-info btn-sm">
-                Absences
             </a>
         </div>
     </div>
@@ -33,8 +30,7 @@
             <th>Position</th>
             <th>Salary</th>
             <th>Department</th>
-            <th>Actions</th>
-        </tr>
+            <th>Actions</th> </tr>
         </thead>
 
         <tbody>
@@ -48,24 +44,35 @@
                 <span th:if="${employee.department != null}" th:text="${employee.department.name}"></span>
                 <span th:unless="${employee.department != null}" class="text-muted">-</span>
             </td>
+
             <td class="d-flex gap-2">
-                <a th:href="@{/employees/update(employeeId=${employee.id})}"
-                   class="btn btn-info btn-sm">
-                    Update
-                </a>
-                <a th:href="@{/employees/delete(employeeId=${employee.id})}"
-                   class="btn btn-danger btn-sm"
-                   onclick="return confirm('Are you sure you want to delete this employee?')">
-                    Delete
-                </a>
-                <a th:href="@{/employees/{id}(id=${employee.id})}"
-                   class="btn btn-outline-primary btn-sm">
-                    View
-                </a>
-                <a th:href="@{/departments(employeeId=${employee.id})}"
-                   class="btn btn-outline-success btn-sm">
-                    Attach to Department
-                </a>
+
+                <div th:if="${param.mode != null and param.mode[0] == 'select'}">
+                    <a th:href="@{/absences/add(employeeId=${employee.id})}"
+                       class="btn btn-success btn-sm">
+                        Select This Employee
+                    </a>
+                </div>
+
+                <div th:unless="${param.mode != null and param.mode[0] == 'select'}" class="d-flex gap-2">
+                    <a th:href="@{/employees/update(employeeId=${employee.id})}"
+                       class="btn btn-info btn-sm">
+                        Update
+                    </a>
+                    <a th:href="@{/employees/delete(employeeId=${employee.id})}"
+                       class="btn btn-danger btn-sm"
+                       onclick="return confirm('Are you sure you want to delete this employee?')">
+                        Delete
+                    </a>
+                    <a th:href="@{/employees/{id}(id=${employee.id})}"
+                       class="btn btn-outline-primary btn-sm">
+                        View
+                    </a>
+                    <a th:href="@{/departments(employeeId=${employee.id})}"
+                       class="btn btn-outline-success btn-sm">
+                        Attach to Dept
+                    </a>
+                </div>
             </td>
         </tr>
         </tbody>
