@@ -103,24 +103,24 @@ public class AbsenceController {
         Absence absence = new Absence();
         absence.setStartDate(LocalDate.now());
 
-        // Якщо ми повернулися зі списку з вибраним ID
         if (employeeId != null) {
             absence.setEmployeeId(employeeId.toString());
-
-            // Знаходимо працівника, щоб показати його ім'я на формі
-            Employee employee = employeeService.findById(employeeId);
-            if (employee != null) {
-                model.addAttribute("selectedEmployeeName", employee.getFirstName() + " " + employee.getLastName());
-            }
+            try {
+                Employee employee = employeeService.findById(employeeId);
+                if (employee != null) {
+                    model.addAttribute("selectedEmployeeName", employee.getFirstName() + " " + employee.getLastName());
+                }
+            } catch (Exception ignored) {}
         }
 
         model.addAttribute("absence", absence);
         model.addAttribute("types", AbsenceType.values());
+
+        // Явно кажемо, що це НОВИЙ запис
+        model.addAttribute("isNew", true);
+
         return "absences/absence-form";
     }
-
-    // ... інші методи (save, update, delete, info) залишаються без змін ...
-    // Тільки в update теж можна додати логіку відображення імені, якщо треба
 
     @GetMapping("/update")
     public String updateForm(@RequestParam("id") UUID id, Model model) {
@@ -132,17 +132,17 @@ public class AbsenceController {
         model.addAttribute("absence", absence);
         model.addAttribute("types", AbsenceType.values());
 
-        // Підтягуємо ім'я для редагування теж
         if (absence.getEmployeeId() != null) {
             try {
                 Employee employee = employeeService.findById(UUID.fromString(absence.getEmployeeId()));
                 if (employee != null) {
                     model.addAttribute("selectedEmployeeName", employee.getFirstName() + " " + employee.getLastName());
                 }
-            } catch (Exception e) {
-                // ігноруємо, якщо ID битий
-            }
+            } catch (Exception ignored) {}
         }
+
+        // Явно кажемо, що це РЕДАГУВАННЯ
+        model.addAttribute("isNew", false);
 
         return "absences/absence-form";
     }

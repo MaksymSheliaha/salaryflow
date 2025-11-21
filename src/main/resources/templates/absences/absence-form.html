@@ -8,7 +8,7 @@
 </head>
 <body>
 <div class="container mt-4">
-    <h2 th:text="${absence.id} != null ? 'Edit Absence' : 'Add Absence'">Form</h2>
+    <h2 th:text="${isNew} ? 'Add Absence' : 'Update Absence'">Form</h2>
 
     <form th:action="@{/absences/save}" th:object="${absence}" method="post">
         <input type="hidden" th:field="*{id}"/>
@@ -62,10 +62,8 @@
         </div>
 
         <div class="d-flex gap-2">
-            <button class="btn btn-primary" type="submit">Save</button>
+            <button class="btn btn-info text-white" type="submit">Save</button>
             <a class="btn btn-secondary" th:href="@{/absences}">Cancel</a>
-            <a th:if="${absence.id != null}" class="btn btn-danger"
-               th:href="@{/absences/delete(id=${absence.id})}" onclick="return confirm('Delete?')">Delete</a>
         </div>
     </form>
 </div>

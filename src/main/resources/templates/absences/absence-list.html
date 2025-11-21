@@ -98,7 +98,7 @@
                 </a>
             </th>
 
-            <th style="width: 200px;">Actions</th>
+            <th style="width: 220px;">Actions</th>
         </tr>
         </thead>
         <tbody>
@@ -116,10 +116,10 @@
             <td th:text="${a.endDate}">End</td>
 
             <td class="d-flex gap-2">
-                <a th:href="@{/absences/{id}(id=${a.id})}" class="btn btn-sm btn-outline-primary">View</a>
-                <a th:href="@{/absences/update(id=${a.id})}" class="btn btn-sm btn-info">Edit</a>
+                <a th:href="@{/absences/update(id=${a.id})}" class="btn btn-sm btn-info">Update</a>
                 <a th:href="@{/absences/delete(id=${a.id})}" class="btn btn-sm btn-danger"
                    onclick="return confirm('Delete this record?')">Delete</a>
+                <a th:href="@{/absences/{id}(id=${a.id})}" class="btn btn-sm btn-outline-primary">View</a>
             </td>
         </tr>
         <tr th:if="${absences.empty}">
