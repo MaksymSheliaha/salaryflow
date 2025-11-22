@@ -18,6 +18,11 @@
                     <a class="nav-link text-warning" th:href="@{/users}">Users (Admin)</a>
                 </li>
 
+                <li class="nav-item me-2" sec:authorize="isAuthenticated()">
+                    <a class="nav-link" th:href="@{/profile}">
+                        👤 My Profile
+                    </a>
+                </li>
                 <li class="nav-item ms-3">
                     <form th:action="@{/logout}" method="post" class="d-inline">
                         <button type="submit" class="btn btn-sm btn-outline-light">Logout</button>

@@ -27,7 +27,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // Вимикаємо CSRF для простоти (на проді краще залишити)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
-
+                        .requestMatchers("/forgot-password", "/reset-password").permitAll()
                         // 1. Керування користувачами - Тільки Адмін (як було)
                         .requestMatchers("/users/**").hasAuthority("ROLE_ADMIN")
 
