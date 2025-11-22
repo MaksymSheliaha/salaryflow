@@ -15,12 +15,59 @@
         <a th:href="@{/users/add}" class="btn btn-primary">Add New User</a>
     </div>
 
+    <form th:action="@{/users}" method="get" class="row g-2 mb-4 p-3 bg-light border rounded align-items-end">
+
+        <div class="col-md-4">
+            <label class="form-label small fw-bold text-muted">Username</label>
+            <input type="text" name="q" class="form-control" placeholder="Search username..."
+                   th:value="${currentSearch}">
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted">Role</label>
+            <select name="role" class="form-select">
+                <option value="">All Roles</option>
+                <option value="ROLE_ADMIN" th:selected="${currentRole == 'ROLE_ADMIN'}">Admin</option>
+                <option value="ROLE_MANAGER" th:selected="${currentRole == 'ROLE_MANAGER'}">Manager</option>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted">Status</label>
+            <select name="status" class="form-select">
+                <option value="">All Statuses</option>
+                <option value="true" th:selected="${currentStatus == true}">Active</option>
+                <option value="false" th:selected="${currentStatus == false}">Disabled</option>
+            </select>
+        </div>
+
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-100">Filter</button>
+            <a th:href="@{/users}" class="btn btn-outline-secondary">Reset</a>
+        </div>
+
+        <input type="hidden" name="sort" th:if="${param.sort != null}" th:value="${param.sort[0]}">
+    </form>
+
     <table class="table table-bordered table-striped">
         <thead class="table-dark">
         <tr>
-            <th>Username</th>
+            <th th:with="order=${page.sort.getOrderFor('username')}">
+                <a th:href="@{/users(sort='username,' + (${order != null && order.isAscending()} ? 'desc' : 'asc'), q=${currentSearch}, role=${currentRole}, status=${currentStatus})}"
+                   class="text-white text-decoration-none">
+                    Username <span th:if="${order != null}" th:text="${order.isAscending() ? '↑' : '↓'}"></span>
+                </a>
+            </th>
+
             <th>Roles</th>
-            <th>Created At</th>
+
+            <th th:with="order=${page.sort.getOrderFor('createdAt')}">
+                <a th:href="@{/users(sort='createdAt,' + (${order != null && order.isAscending()} ? 'desc' : 'asc'), q=${currentSearch}, role=${currentRole}, status=${currentStatus})}"
+                   class="text-white text-decoration-none">
+                    Created At <span th:if="${order != null}" th:text="${order.isAscending() ? '↑' : '↓'}"></span>
+                </a>
+            </th>
+
             <th>Status</th>
             <th>Actions</th>
         </tr>
@@ -39,14 +86,49 @@
                 <span th:unless="${user.enabled}" class="badge bg-danger">Disabled</span>
             </td>
             <td>
-                <a th:if="${user.username != 'admin'}"
-                   th:href="@{/users/delete(id=${user.id})}"
-                   class="btn btn-sm btn-danger"
-                   onclick="return confirm('Are you sure?')">Delete</a>
+                <div class="btn-group" th:if="${user.username != 'admin'}">
+                    <a th:href="@{/users/toggle(id=${user.id})}"
+                       class="btn btn-sm btn-outline-warning"
+                       th:text="${user.enabled ? 'Disable' : 'Enable'}">Toggle</a>
+
+                    <a th:href="@{/users/delete(id=${user.id})}"
+                       class="btn btn-sm btn-danger"
+                       onclick="return confirm('Are you sure?')">Delete</a>
+                </div>
             </td>
         </tr>
         </tbody>
     </table>
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3" th:if="${page.totalPages > 0}">
+
+        <div class="btn-group" role="group">
+            <a th:if="${page.hasPrevious()}" class="btn btn-outline-secondary btn-sm"
+               th:href="@{/users(page=${page.number - 1}, size=${page.size}, sort=${param.sort}, q=${currentSearch}, role=${currentRole}, status=${currentStatus})}">Previous</a>
+            <span th:unless="${page.hasPrevious()}" class="btn btn-outline-secondary btn-sm disabled">Previous</span>
+
+            <a th:if="${page.hasNext()}" class="btn btn-outline-secondary btn-sm"
+               th:href="@{/users(page=${page.number + 1}, size=${page.size}, sort=${param.sort}, q=${currentSearch}, role=${currentRole}, status=${currentStatus})}">Next</a>
+            <span th:unless="${page.hasNext()}" class="btn btn-outline-secondary btn-sm disabled">Next</span>
+        </div>
+
+        <div>
+            Page <span th:text="${page.number + 1}"></span> of <span th:text="${page.totalPages}"></span>
+        </div>
+
+        <form th:action="@{/users}" method="get" class="d-flex align-items-center gap-2">
+            <select name="size" class="form-select form-select-sm" onchange="this.form.submit()" style="width: auto;">
+                <option th:value="10" th:selected="${page.size == 10}">10</option>
+                <option th:value="20" th:selected="${page.size == 20}">20</option>
+                <option th:value="50" th:selected="${page.size == 50}">50</option>
+            </select>
+
+            <input type="hidden" name="page" value="0"> <input type="hidden" name="sort" th:if="${param.sort != null}" th:value="${param.sort[0]}">
+            <input type="hidden" name="q" th:value="${currentSearch}">
+            <input type="hidden" name="role" th:value="${currentRole}">
+            <input type="hidden" name="status" th:value="${currentStatus}">
+        </form>
+    </div>
 </div>
 
 </body>

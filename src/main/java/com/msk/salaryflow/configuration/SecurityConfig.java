@@ -26,13 +26,24 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable()) // Вимикаємо CSRF для простоти (на проді краще залишити)
                 .authorizeHttpRequests(auth -> auth
-                        // 1. Дозволяємо доступ до статичних ресурсів (CSS, JS) усім
                         .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
 
-                        // 2. До сторінки створення користувачів (яку ми зробимо пізніше) - тільки АДМІН
+                        // 1. Керування користувачами - Тільки Адмін (як було)
                         .requestMatchers("/users/**").hasAuthority("ROLE_ADMIN")
 
-                        // 3. Все інше вимагає авторизації (будь-яка роль)
+                        // --- НОВІ ПРАВИЛА ДЛЯ ДЕПАРТАМЕНТІВ ---
+
+                        // 2. СТВОРЕННЯ, РЕДАГУВАННЯ, ВИДАЛЕННЯ департаментів - Тільки АДМІН
+                        // (Тобто URL, які змінюють дані)
+                        .requestMatchers("/departments/add", "/departments/save", "/departments/update", "/departments/delete").hasAuthority("ROLE_ADMIN")
+
+                        // 3. ПЕРЕГЛЯД департаментів - Доступний всім (і Менеджерам теж)
+                        // (Це потрібно, щоб менеджер міг вибрати департамент для працівника)
+                        .requestMatchers("/departments/**").authenticated()
+
+                        // ---------------------------------------
+
+                        // Всі інші запити (працівники, відпустки) доступні всім авторизованим
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
