@@ -27,7 +27,7 @@ import java.util.UUID;
 public class AbsenceController {
 
     private final AbsenceService service;
-    private final EmployeeService employeeService; // Інжектимо сервіс працівників
+    private final EmployeeService employeeService;
 
     @GetMapping
     public String list(Model model,
@@ -37,25 +37,18 @@ public class AbsenceController {
                        @RequestParam(value = "q", required = false) String searchTerm,
                        @RequestParam(value = "type", required = false) AbsenceType type) {
 
-        // Парсинг сортування (приклад: "startDate,desc")
         String[] sortParams = sort.split(",");
         String sortField = sortParams[0];
         Sort.Direction sortDirection = sortParams.length > 1 && "desc".equalsIgnoreCase(sortParams[1])
                 ? Sort.Direction.DESC : Sort.Direction.ASC;
 
-        // Важливо: Ми можемо сортувати базу Mongo тільки по полях Mongo (startDate, endDate, type).
-        // Сортування по firstName/lastName тут не спрацює автоматично через Pageable.
-        // Якщо поле сортування ім'я - ми просто скидаємо на startDate (або треба робити складну логіку в пам'яті).
-//        if (sortField.equals("employeeFirstName") || sortField.equals("employeeLastName")) {
-//            sortField = "startDate"; // Fallback для простоти
-//        }
-
+        // Поле sortField тут не змінюємо, бо сортування відбувається в пам'яті в Service
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortField));
 
         Page<AbsenceResponse> absences = service.findAll(searchTerm, type, pageable);
 
         model.addAttribute("absences", absences);
-        model.addAttribute("types", AbsenceType.values()); // Для випадаючого списку фільтру
+        model.addAttribute("types", AbsenceType.values());
         model.addAttribute("currentType", type);
         model.addAttribute("currentSearch", searchTerm);
         return "absences/absence-list";
@@ -73,6 +66,17 @@ public class AbsenceController {
 
         if (bindingResult.hasErrors()) {
             model.addAttribute("types", AbsenceType.values());
+            // Перевіряємо, чи є id працівника, і якщо є, намагаємося дістати його ім'я
+            if (absence.getEmployeeId() != null) {
+                try {
+                    Employee employee = employeeService.findById(absence.getEmployeeId());
+                    if (employee != null) {
+                        model.addAttribute("selectedEmployeeName", employee.getFirstName() + " " + employee.getLastName());
+                    }
+                } catch (Exception ignored) {}
+            }
+            // Визначаємо, чи це новий запис, для коректної поведінки форми
+            model.addAttribute("isNew", absence.getId() == null);
             return "absences/absence-form";
         }
 
@@ -104,19 +108,15 @@ public class AbsenceController {
         absence.setStartDate(LocalDate.now());
 
         if (employeeId != null) {
-            absence.setEmployeeId(employeeId.toString());
-            try {
-                Employee employee = employeeService.findById(employeeId);
-                if (employee != null) {
-                    model.addAttribute("selectedEmployeeName", employee.getFirstName() + " " + employee.getLastName());
-                }
-            } catch (Exception ignored) {}
+            absence.setEmployeeId(employeeId); // employeeId вже UUID
+            Employee employee = employeeService.findById(employeeId);
+            if (employee != null) {
+                model.addAttribute("selectedEmployeeName", employee.getFirstName() + " " + employee.getLastName());
+            }
         }
 
         model.addAttribute("absence", absence);
         model.addAttribute("types", AbsenceType.values());
-
-        // Явно кажемо, що це НОВИЙ запис
         model.addAttribute("isNew", true);
 
         return "absences/absence-form";
@@ -133,15 +133,13 @@ public class AbsenceController {
         model.addAttribute("types", AbsenceType.values());
 
         if (absence.getEmployeeId() != null) {
-            try {
-                Employee employee = employeeService.findById(UUID.fromString(absence.getEmployeeId()));
-                if (employee != null) {
-                    model.addAttribute("selectedEmployeeName", employee.getFirstName() + " " + employee.getLastName());
-                }
-            } catch (Exception ignored) {}
+            // employeeId вже UUID, не потрібно парсити
+            Employee employee = employeeService.findById(absence.getEmployeeId());
+            if (employee != null) {
+                model.addAttribute("selectedEmployeeName", employee.getFirstName() + " " + employee.getLastName());
+            }
         }
 
-        // Явно кажемо, що це РЕДАГУВАННЯ
         model.addAttribute("isNew", false);
 
         return "absences/absence-form";

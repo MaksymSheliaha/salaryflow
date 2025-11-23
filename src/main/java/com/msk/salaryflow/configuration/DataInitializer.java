@@ -33,7 +33,7 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         createOrUpdateAdmin();
-        generateTestAbsences();
+//        generateTestAbsences();
     }
 
 //    private void createOrUpdateAdmin() {
@@ -112,36 +112,38 @@ public class DataInitializer implements CommandLineRunner {
         userRepository.save(admin);
         System.out.println(">>> Admin created successfully with default password.");
     }
-    private void generateTestAbsences() {
-        if (absenceRepository.count() > 0) return;
-
-        System.out.println(">>> Generating test data for MongoDB (Absences)...");
-        List<Employee> employees = employeeRepository.findAll();
-        if (employees.isEmpty()) return;
-
-        Random random = new Random();
-        AbsenceType[] types = AbsenceType.values();
-        int count = 0;
-
-        for (Employee emp : employees) {
-            if (count++ > 50) break;
-            int absencesToGenerate = random.nextInt(3) + 1;
-
-            for (int i = 0; i < absencesToGenerate; i++) {
-                Absence absence = new Absence();
-                absence.setId(UUID.randomUUID());
-                absence.setEmployeeId(emp.getId().toString());
-                absence.setType(types[random.nextInt(types.length)]);
-
-                int randomDay = random.nextInt(365);
-                LocalDate start = LocalDate.of(2024, 1, 1).plusDays(randomDay);
-                absence.setStartDate(start);
-                absence.setEndDate(start.plusDays(random.nextInt(10) + 1));
-                absence.setComment("Auto-generated test absence");
-
-                absenceRepository.save(absence);
-            }
-        }
-        System.out.println(">>> Absences generated.");
-    }
+//
+//    private void generateTestAbsences() {
+//        if (absenceRepository.count() > 0) return;
+//
+//        System.out.println(">>> Generating test data for MongoDB (Absences)...");
+//        List<Employee> employees = employeeRepository.findAll();
+//        if (employees.isEmpty()) return;
+//
+//        Random random = new Random();
+//        AbsenceType[] types = AbsenceType.values();
+//        int count = 0;
+//
+//        for (Employee emp : employees) {
+//            if (count++ > 50) break;
+//            int absencesToGenerate = random.nextInt(3) + 1;
+//
+//            for (int i = 0; i < absencesToGenerate; i++) {
+//                Absence absence = new Absence();
+//                absence.setId(UUID.randomUUID());
+//                absence.setEmployeeId(emp.getId().toString());
+//                absence.setType(types[random.nextInt(types.length)]);
+//
+//                int randomDay = random.nextInt(365);
+//                LocalDate start = LocalDate.of(2024, 1, 1).plusDays(randomDay);
+//                absence.setStartDate(start);
+//                absence.setEndDate(start.plusDays(random.nextInt(10) + 1));
+//                absence.setComment("Auto-generated test absence");
+//
+//                absenceRepository.save(absence);
+//            }
+//        }
+//        System.out.println(">>> Absences generated.");
+//    }
+//
 }

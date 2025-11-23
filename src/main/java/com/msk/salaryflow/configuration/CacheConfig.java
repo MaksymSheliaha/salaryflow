@@ -20,18 +20,18 @@ import java.time.Duration;
 @Configuration
 @EnableCaching
 public class CacheConfig {
+
     @Bean
     @Primary
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-
         ObjectMapper objectMapper = new ObjectMapper();
 
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
         objectMapper.activateDefaultTyping(
-                objectMapper.getPolymorphicTypeValidator(),
-                ObjectMapper.DefaultTyping.EVERYTHING,
+                LaissezFaireSubTypeValidator.instance,
+                ObjectMapper.DefaultTyping.NON_FINAL,
                 JsonTypeInfo.As.PROPERTY
         );
 
@@ -49,11 +49,14 @@ public class CacheConfig {
                 .cacheDefaults(config)
                 .build();
     }
+
     @Bean("mongoRedisCacheManager")
     public RedisCacheManager mongoRedisCacheManager(RedisConnectionFactory mongoRedisConnectionFactory) {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        // Тут у вас вже було правильно (NON_FINAL), тому Mongo працювало б стабільно
         mapper.activateDefaultTyping(
                 LaissezFaireSubTypeValidator.instance,
                 ObjectMapper.DefaultTyping.NON_FINAL,
@@ -64,7 +67,7 @@ public class CacheConfig {
 
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(serializer))
-                .entryTtl(Duration.ofHours(1)); // TTL для Mongo кешу
+                .entryTtl(Duration.ofHours(1));
 
         return RedisCacheManager.builder(mongoRedisConnectionFactory)
                 .cacheDefaults(config)
