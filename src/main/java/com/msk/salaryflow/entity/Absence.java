@@ -18,18 +18,12 @@ public class Absence {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
-
-    // --- ЗМІНА 1: Зв'язок з Employee для пошуку та сортування ---
-    // FetchType.LAZY означає, що дані працівника не будуть тягнутися з бази,
-    // поки ми їх явно не попросимо (економія ресурсів).
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id", insertable = false, updatable = false)
     private Employee employee;
 
-    // --- Кінець зміни ---
-
     @NotNull(message = "Employee ID must not be empty")
-    @Column(name = "employee_id") // Явно вказуємо колонку, щоб вона збігалася з тією, що в JoinColumn
+    @Column(name = "employee_id")
     private UUID employeeId;
 
     @NotNull(message = "Absence type must not be null")

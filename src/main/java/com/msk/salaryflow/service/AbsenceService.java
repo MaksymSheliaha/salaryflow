@@ -34,30 +34,17 @@ public class AbsenceService {
     private final AbsenceRepository absenceRepository;
     private final EmployeeRepository employeeRepository;
 
-    // --- КЕШУВАННЯ СТОРІНОК ---
     @Cacheable(value = "absences_page", key = "{#searchTerm, #typeFilter, #pageable.pageNumber, #pageable.pageSize, #pageable.sort.toString()}")
     @Transactional(readOnly = true)
     public Page<AbsenceResponse> findAll(String searchTerm, AbsenceType typeFilter, Pageable pageable) {
-
-        // 1. Виправляємо імена полів для сортування (DTO -> Entity)
         Pageable fixedPageable = mapSortFields(pageable);
-
-        // 2. Будуємо SQL-фільтр
         Specification<Absence> spec = createSpecification(searchTerm, typeFilter);
-
-        // 3. Виконуємо запит у БД
         Page<Absence> pageResult = absenceRepository.findAll(spec, fixedPageable);
-
-        // 4. Перетворюємо Entity на DTO
         List<AbsenceResponse> responseList = pageResult.getContent().stream()
                 .map(this::mapToResponse)
                 .toList();
-
-        // 5. Повертаємо RestResponsePage, щоб Redis міг це зберегти без помилок
         return new RestResponsePage<>(responseList, fixedPageable, pageResult.getTotalElements());
     }
-
-    // --- КЕШУВАННЯ ОДНОГО ЗАПИСУ ---
     @Cacheable(value = "absence_response", key = "#id")
     @Transactional(readOnly = true)
     public AbsenceResponse findByIdResponse(UUID id) {
@@ -69,8 +56,6 @@ public class AbsenceService {
     public Optional<Absence> findById(UUID id) {
         return absenceRepository.findById(id);
     }
-
-    // --- ЗБЕРЕЖЕННЯ І ОЧИЩЕННЯ КЕШУ ---
     @Caching(evict = {
             @CacheEvict(value = "absence_response", key = "#absence.id"),
             @CacheEvict(value = "absences_page", allEntries = true)
@@ -88,12 +73,6 @@ public class AbsenceService {
     public void deleteById(UUID id) {
         absenceRepository.deleteById(id);
     }
-
-    // --- ДОПОМІЖНІ МЕТОДИ ---
-
-    /**
-     * Конвертує поля сортування з DTO (які приходять з фронта) в поля Entity
-     */
     private Pageable mapSortFields(Pageable pageable) {
         if (pageable.getSort().isUnsorted()) {
             return pageable;
@@ -119,17 +98,12 @@ public class AbsenceService {
     private Specification<Absence> createSpecification(String searchTerm, AbsenceType typeFilter) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
-
-            // Оптимізація: fetch join, щоб завантажити Employee одним запитом (уникаємо N+1)
-            // Робимо це тільки для основного запиту, а не для запиту count (який повертає Long)
             if (Long.class != query.getResultType()) {
                 root.fetch("employee", JoinType.LEFT);
             }
-
             if (typeFilter != null) {
                 predicates.add(criteriaBuilder.equal(root.get("type"), typeFilter));
             }
-
             if (searchTerm != null && !searchTerm.trim().isEmpty()) {
                 String likePattern = "%" + searchTerm.toLowerCase() + "%";
                 Join<Absence, Employee> employeeJoin = root.join("employee", JoinType.LEFT);
@@ -154,8 +128,6 @@ public class AbsenceService {
         response.setSickPay(0.0);
 
         Employee employee = absence.getEmployee();
-
-        // Fallback, якщо раптом employee не підтягнувся (хоча fetch має це виправити)
         if (employee == null && absence.getEmployeeId() != null) {
             employee = employeeRepository.findById(absence.getEmployeeId()).orElse(null);
         }
