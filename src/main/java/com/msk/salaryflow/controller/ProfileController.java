@@ -20,19 +20,17 @@ public class ProfileController {
 
     private final UserService userService;
 
-    // Відкрити сторінку профілю
     @GetMapping
     public String profile(Model model, Principal principal) {
         String username = principal.getName();
-        // Нам треба додати метод findByUsername у UserService, якщо його немає (див. нижче)
-        // Якщо у тебе в UserService немає методу findByUsername, я напишу його в кроці 4
-        User user = userService.findById(userService.findByUsername(username).getId());
+
+        // ВИПРАВЛЕНО: Просто беремо юзера по username (без кешу це надійно)
+        User user = userService.findByUsername(username);
 
         model.addAttribute("user", user);
         return "profile";
     }
 
-    // Обробка зміни пароля
     @PostMapping("/change-password")
     public String changePassword(@RequestParam("oldPassword") String oldPassword,
                                  @RequestParam("newPassword") String newPassword,

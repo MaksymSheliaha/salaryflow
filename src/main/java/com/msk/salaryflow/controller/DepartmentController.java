@@ -4,10 +4,11 @@ import com.msk.salaryflow.entity.Department;
 import com.msk.salaryflow.entity.DepartmentInfo;
 import com.msk.salaryflow.entity.Employee;
 import com.msk.salaryflow.model.DepartmentSearchRequest;
-import com.msk.salaryflow.model.PageResponse;
+// import com.msk.salaryflow.model.PageResponse; // Видаліть цей імпорт
 import com.msk.salaryflow.service.DepartmentService;
 import com.msk.salaryflow.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page; // Додайте цей імпорт
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -30,20 +31,25 @@ public class DepartmentController {
                                   Pageable pageable){
 
         DepartmentSearchRequest request = new DepartmentSearchRequest(pageable, searchTerm, empInfo);
-        PageResponse<DepartmentInfo> page = departmentService.findAll(request);
-        model.addAttribute("departments", page.content());
+
+        // Змінюємо тип на Page
+        Page<DepartmentInfo> page = departmentService.findAll(request);
+
+        // Тепер .getContent() працює коректно, бо це стандартний Page
+        model.addAttribute("departments", page.getContent());
         model.addAttribute("page", page);
         model.addAttribute("employeeId", employeeId);
         model.addAttribute("empInfoEnabled", Boolean.TRUE.equals(empInfo));
         return "departments/department-list";
     }
 
+    // ... решта методів без змін ...
     @PostMapping("/save")
     private String save(@ModelAttribute("department") Department department){
         Department saved = departmentService.save(department);
         return "redirect:/departments/"+saved.getId();
     }
-
+    // ... (весь інший код контролера залишається таким самим)
     @GetMapping("/add")
     private String showFormForAdd(Model model){
         Department department = new Department();
@@ -56,7 +62,6 @@ public class DepartmentController {
         Department department = departmentService.findById(id);
         if(department==null) return "redirect:/departments/notFound";
         model.addAttribute("department", department);
-
         return "departments/department-form";
 
     }

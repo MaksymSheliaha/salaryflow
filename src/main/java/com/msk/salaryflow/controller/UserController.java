@@ -1,6 +1,7 @@
 package com.msk.salaryflow.controller;
 
 import com.msk.salaryflow.entity.User;
+import com.msk.salaryflow.model.UserListDto;
 import com.msk.salaryflow.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,13 +30,16 @@ public class UserController {
                             @RequestParam(value = "status", required = false) Boolean status,
                             @PageableDefault(sort = "username", direction = Sort.Direction.ASC, size = 10) Pageable pageable) {
 
-        // Передаємо всі фільтри у сервіс
-        Page<User> page = userService.findAll(searchTerm, role, status, pageable);
+        Page<UserListDto> pageFromService = userService.findAll(searchTerm, role, status, pageable);
+        Page<UserListDto> uiPage = new org.springframework.data.domain.PageImpl<>(
+                pageFromService.getContent(),
+                pageable,
+                pageFromService.getTotalElements()
+        );
 
-        model.addAttribute("users", page.getContent());
-        model.addAttribute("page", page);
+        model.addAttribute("users", uiPage.getContent());
+        model.addAttribute("page", uiPage); // Передаємо "виправлену" сторінку
 
-        // Повертаємо поточні значення фільтрів на сторінку, щоб заповнити поля
         model.addAttribute("currentSearch", searchTerm);
         model.addAttribute("currentRole", role);
         model.addAttribute("currentStatus", status);
