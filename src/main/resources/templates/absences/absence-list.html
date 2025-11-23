@@ -120,16 +120,8 @@
                 </a>
             </th>
 
-            <th data-column-id="sickPay" class="js-column-cell"
-                th:with="cs=${param.sort != null ? param.sort[0] : ''},
-                           isActive=${#strings.startsWith(cs,'sickPay,')},
-                           isDesc=${isActive ? #strings.contains(cs,',desc') : false},
-                           nextDir=${(isActive and not isDesc) ? 'desc' : 'asc'}">
-                <a th:href="@{/absences(sort=${'sickPay,' + nextDir}, size=${absences.size}, q=${currentSearch}, type=${currentType})}"
-                   class="link-light text-decoration-none">
-                    Sick Pay
-                    <span th:text="${isActive} ? (${isDesc} ? '↓' : '↑') : ''"></span>
-                </a>
+            <th data-column-id="sickPay" class="js-column-cell">
+                Sick Pay
             </th>
 
             <th style="width: 220px;">Actions</th>

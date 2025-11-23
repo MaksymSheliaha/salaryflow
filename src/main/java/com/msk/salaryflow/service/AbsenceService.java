@@ -108,9 +108,6 @@ public class AbsenceService {
                 property = "employee.firstName";
             } else if ("employeeLastName".equals(property)) {
                 property = "employee.lastName";
-            } else if ("sickPay".equals(property)) {
-                // Сортування по sickPay в БД неможливе (це розрахункове поле), сортуємо по даті
-                property = "startDate";
             }
 
             newSort = newSort.and(Sort.by(direction, property));
