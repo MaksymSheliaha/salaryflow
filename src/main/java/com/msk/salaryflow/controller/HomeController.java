@@ -10,4 +10,9 @@ public class HomeController {
     public String home() {
         return "index"; // Повертає шаблон index.html
     }
+
+    @GetMapping("/login")
+    public String login() {
+        return "login"; // Повертає login.html
+    }
 }
