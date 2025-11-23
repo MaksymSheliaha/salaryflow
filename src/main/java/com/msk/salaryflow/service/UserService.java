@@ -2,16 +2,20 @@ package com.msk.salaryflow.service;
 
 import com.msk.salaryflow.entity.Role;
 import com.msk.salaryflow.entity.User;
+import com.msk.salaryflow.model.RestResponsePage;
+import com.msk.salaryflow.model.UserListDto;
 import com.msk.salaryflow.repository.RoleRepository;
 import com.msk.salaryflow.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -23,55 +27,56 @@ public class UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public Page<User> findAll(String searchTerm, String role, Boolean enabled, Pageable pageable) {
+    // --- ЦЕЙ КЕШ (DTO) ЗАЛИШАЄМО, ВІН ПРАЦЮЄ ДОБРЕ ---
+    @Cacheable(value = "users_page_dto", key = "{#searchTerm, #role, #enabled, #pageable.pageNumber, #pageable.pageSize, #pageable.sort.toString()}")
+    public Page<UserListDto> findAll(String searchTerm, String role, Boolean enabled, Pageable pageable) {
         String search = null;
         if (searchTerm != null && !searchTerm.trim().isEmpty()) {
             search = "%" + searchTerm.trim().toLowerCase() + "%";
         }
         String roleFilter = (role != null && !role.trim().isEmpty()) ? role : null;
-        return userRepository.filterUsers(search, roleFilter, enabled, pageable);
+
+        Page<User> page = userRepository.filterUsers(search, roleFilter, enabled, pageable);
+
+        List<UserListDto> dtos = page.getContent().stream()
+                .map(UserListDto::new)
+                .toList();
+
+        return new RestResponsePage<>(dtos, page.getPageable(), page.getTotalElements());
     }
 
-    // ВАЖЛИВО: Використовуємо @CacheEvict, щоб очистити старий запис з кешу при оновленні.
-    // Ключ беремо з об'єкта user (#user.username)
-    @CacheEvict(value = "users", key = "#user.username")
+    // --- Збереження (Очищаємо кеш списків) ---
+    // CacheEvict для "users" прибираємо, бо ми більше не кешуємо окремих юзерів
+    @CacheEvict(value = "users_page_dto", allEntries = true)
     public void saveUser(User user, String rawPassword, String roleName) {
-        // 1. Перевірка на унікальність
         User existingUser = userRepository.findByUsername(user.getUsername()).orElse(null);
         if (existingUser != null && !existingUser.getId().equals(user.getId())) {
             throw new IllegalArgumentException("Username '" + user.getUsername() + "' is already taken.");
         }
-
-        // 2. Хешування пароля
         if (rawPassword != null && !rawPassword.isEmpty()) {
             user.setPassword(passwordEncoder.encode(rawPassword));
         }
-
-        // 3. Активація нового користувача
         if (user.getId() == null) {
             user.setEnabled(true);
         }
-
-        // 4. Роль
         Role role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
-
         user.setRoles(Set.of(role));
         userRepository.save(user);
     }
 
+    // --- ВИДАЛЕНО @Cacheable ---
+    // Брати юзера по ID з бази - це дуже швидко. Кеш тут не потрібен і створює проблеми.
     public User findById(UUID id) {
         return userRepository.findById(id).orElse(null);
     }
 
-    // При видаленні - очищаємо весь кеш користувачів, бо ми не знаємо username по ID тут
-    @CacheEvict(value = "users", allEntries = true)
+    @CacheEvict(value = "users_page_dto", allEntries = true)
     public void deleteById(UUID id) {
         userRepository.deleteById(id);
     }
 
-    // При зміні статусу - теж очищаємо все (простий варіант)
-    @CacheEvict(value = "users", allEntries = true)
+    @CacheEvict(value = "users_page_dto", allEntries = true)
     public void toggleStatus(UUID id) {
         User user = findById(id);
         if (user != null && !user.getUsername().equals("admin")) {
@@ -80,18 +85,15 @@ public class UserService {
         }
     }
 
-    // ОСЬ ТУТ треба @Cacheable! Це метод, який викликається постійно при кожному запиті (Spring Security)
-    @Cacheable(value = "users", key = "#username")
+    // --- ВИДАЛЕНО @Cacheable ---
+    // Це вирішить вашу проблему з помилкою 500 у профілі
     public User findByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    // При зміні пароля - видаляємо старий запис з кешу
-    @CacheEvict(value = "users", key = "#username")
+    @CacheEvict(value = "users_page_dto", allEntries = true)
     public void changePassword(String username, String oldPassword, String newPassword) {
-        // Тут ми не викликаємо this.findByUsername, щоб не спрацював кеш всередині методу,
-        // але для надійності краще дістати напряму з репозиторію
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 

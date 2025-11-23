@@ -1,10 +1,12 @@
 package com.msk.salaryflow.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails; // Імпортуємо UserDetails
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -13,9 +15,10 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Data
+@NoArgsConstructor
 @Entity
 @Table(name = "users")
-public class User implements UserDetails { // Імплементуємо UserDetails
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue
@@ -24,27 +27,25 @@ public class User implements UserDetails { // Імплементуємо UserDet
     @Column(unique = true, nullable = false)
     private String username;
 
+    @JsonIgnore
     @Column(nullable = false)
     private String password;
 
-    @Column(name = "enabled") // Виправляємо, щоб не було конфлікту з SQL-ключовими словами
+    @Column(name = "enabled")
     private boolean enabled = true;
 
-    // Виправляємо назву колонки: SQL -> created_at, Java -> createdAt
     @Column(name = "created_at")
     private Instant createdAt = Instant.now();
 
-    // Зв'язок багато-до-багатьох з ролями
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_roles",
-            // Виправляємо назви колонок: SQL -> user_id
             joinColumns = @JoinColumn(name = "user_id"),
-            // Виправляємо назви колонок: SQL -> role_id
             inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles;
 
-    // --- Обов'язкові методи інтерфейсу UserDetails ---
+    // --- UserDetails методи ---
 
+    @JsonIgnore
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()
@@ -52,23 +53,26 @@ public class User implements UserDetails { // Імплементуємо UserDet
                 .collect(Collectors.toList());
     }
 
+    @JsonIgnore
     @Override
     public boolean isAccountNonExpired() {
-        return true; // Рахунок не прострочений
+        return true;
     }
 
+    @JsonIgnore
     @Override
     public boolean isAccountNonLocked() {
-        return true; // Рахунок не заблокований
+        return true;
     }
 
+    @JsonIgnore
     @Override
     public boolean isCredentialsNonExpired() {
-        return true; // Облікові дані не прострочені
+        return true;
     }
 
     @Override
     public boolean isEnabled() {
-        return this.enabled; // Використовуємо поле enabled з бази
+        return this.enabled;
     }
 }
