@@ -4,15 +4,14 @@ import com.msk.salaryflow.entity.EventLog;
 import com.msk.salaryflow.repository.EventLogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -82,5 +81,10 @@ public class EventLogService {
 
     public void deleteAll() {
         eventLogRepository.deleteAll();
+    }
+
+    public EventLog findById(UUID id) {
+        Optional<EventLog> optional = eventLogRepository.findById(id);
+        return optional.orElse(null);
     }
 }

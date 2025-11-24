@@ -83,7 +83,7 @@
             <td>
                 <span th:if="${log.targetId == null}">-</span>
                 <span th:if="${log.targetId != null}">
-                    <a th:href="@{/events/open-target(entity=${log.entityName}, id=${log.targetId})}"
+                    <a th:href="@{/events/open-target(entity=${log.entityName}, targetId=${log.targetId}, action=${log.event}, logId=${log.id})}"
                        class="btn btn-sm btn-outline-primary">
                         Open target
                     </a>
