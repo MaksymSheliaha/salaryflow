@@ -1,7 +1,7 @@
 package com.msk.salaryflow.entity;
 
-import jakarta.persistence.Id;
 import lombok.Data;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
@@ -18,10 +18,11 @@ public class EventLog {
     private String author;
     private Object details;
 
-    public EventLog(String event, String entityName, String username, Object details) {
+    public EventLog(String event, String entityName, String author, Object details) {
+        this.id = UUID.randomUUID();
         this.event = event;
         this.entityName = entityName;
-        this.author = username;
+        this.author = author;
         this.details = details;
         this.timestamp = Instant.now();
     }

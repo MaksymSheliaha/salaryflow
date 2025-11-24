@@ -17,6 +17,9 @@
                 <li class="nav-item" sec:authorize="hasAuthority('ROLE_ADMIN')">
                     <a class="nav-link text-warning" th:href="@{/users}">Users (Admin)</a>
                 </li>
+                <li class="nav-item" sec:authorize="hasAuthority('ROLE_ADMIN')">
+                    <a class="nav-link text-warning" th:href="@{/events}">Events (Admin)</a>
+                </li>
 
                 <li class="nav-item me-2" sec:authorize="isAuthenticated()">
                     <a class="nav-link" th:href="@{/profile}">
