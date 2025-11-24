@@ -25,11 +25,11 @@ public class EventLogController {
     @GetMapping
     public String listEvents(@RequestParam(required = false) String from,
                              @RequestParam(required = false) String to,
-                             @RequestParam(required = false) String eventType, // Новий фільтр
-                             @PageableDefault(sort = "timestamp", direction = Sort.Direction.DESC) Pageable pageable, // Сортування за замовчуванням
+                             @RequestParam(required = false) String eventType,
+                             @RequestParam(required = false) String entity, // Новий фільтр
+                             @PageableDefault(sort = "timestamp", direction = Sort.Direction.DESC) Pageable pageable,
                              Model model) {
 
-        // Валідація дат
         if (from != null && !from.isBlank() && to != null && !to.isBlank()) {
             LocalDate fromDate = LocalDate.parse(from);
             LocalDate toDate = LocalDate.parse(to);
@@ -38,26 +38,24 @@ public class EventLogController {
             }
         }
 
-        // Передаємо eventType у сервіс
-        Page<EventLog> eventLogs = eventLogService.getEventLogs(pageable, from, to, eventType);
+        // Передаємо entity у сервіс
+        Page<EventLog> eventLogs = eventLogService.getEventLogs(pageable, from, to, eventType, entity);
 
         model.addAttribute("eventLogs", eventLogs.getContent());
         model.addAttribute("page", eventLogs);
 
-        // Передаємо параметри назад у форму, щоб вони не зникали
+        // Зберігаємо параметри фільтрів
         model.addAttribute("from", from);
         model.addAttribute("to", to);
         model.addAttribute("eventType", eventType);
+        model.addAttribute("entity", entity);
 
-        // Для стрілочок сортування
         Sort.Order sortOrder = pageable.getSort().stream().findFirst().orElse(null);
         model.addAttribute("sortField", sortOrder != null ? sortOrder.getProperty() : "timestamp");
         model.addAttribute("sortDir", sortOrder != null ? sortOrder.getDirection().name().toLowerCase() : "desc");
 
         return "events/event-log-list";
     }
-
-    // ... Інші методи (delete, open-target, raw) залишаються без змін ...
 
     @PostMapping("/{id}/delete")
     public String deleteEvent(@PathVariable UUID id,

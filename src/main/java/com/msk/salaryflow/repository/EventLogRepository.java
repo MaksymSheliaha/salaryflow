@@ -4,13 +4,18 @@ import com.msk.salaryflow.entity.EventLog;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 
 import java.time.Instant;
 import java.util.UUID;
 
 public interface EventLogRepository extends MongoRepository<EventLog, UUID> {
-    Page<EventLog> findByTimestampBetween(Instant from, Instant to, Pageable pageable);
-    Page<EventLog> findByTimestampBetweenAndEventStartingWith(Instant from, Instant to, String eventPrefix, Pageable pageable);
+
+
+    @Query("{ 'timestamp': { $gte: ?0, $lt: ?1 }, " +
+            "  'event': { $regex: '^?2' }, " +
+            "  'entityName': { $regex: '^?3' } }")
+    Page<EventLog> searchLogs(Instant from, Instant to, String eventPrefix, String entityPrefix, Pageable pageable);
 
     long deleteByTimestampBetween(Instant from, Instant to);
 }

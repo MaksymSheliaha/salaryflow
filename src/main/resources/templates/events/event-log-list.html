@@ -15,32 +15,44 @@
     </div>
 
     <form class="row g-2 mb-3 bg-light p-2 rounded border" method="get" th:action="@{/events}">
-        <div class="col-md-3">
+        <input type="hidden" name="size" th:value="${page.size}">
+        <input type="hidden" name="sort" th:value="${sortField + ',' + sortDir}">
+
+        <div class="col-md-2">
             <label class="form-label small mb-1 fw-bold">From date</label>
             <input type="date" name="from" class="form-control form-control-sm" th:value="${from}">
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label class="form-label small mb-1 fw-bold">To date</label>
             <input type="date" name="to" class="form-control form-control-sm" th:value="${to}">
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label class="form-label small mb-1 fw-bold">Event Type</label>
             <select name="eventType" class="form-select form-select-sm">
                 <option value="">All Events</option>
-                <option value="CREATE" th:selected="${eventType == 'CREATE'}">CREATE (Add)</option>
-                <option value="UPDATE" th:selected="${eventType == 'UPDATE'}">UPDATE (Edit)</option>
-                <option value="DELETE" th:selected="${eventType == 'DELETE'}">DELETE (Remove)</option>
+                <option value="CREATE" th:selected="${eventType == 'CREATE'}">CREATE</option>
+                <option value="UPDATE" th:selected="${eventType == 'UPDATE'}">UPDATE</option>
+                <option value="DELETE" th:selected="${eventType == 'DELETE'}">DELETE</option>
                 <option value="LOGIN" th:selected="${eventType == 'LOGIN'}">LOGIN</option>
             </select>
         </div>
 
-        <div class="col-md-3 d-flex align-items-end gap-2">
-            <button type="submit" class="btn btn-sm btn-primary w-50">Apply Filter</button>
-            <a th:href="@{/events}" class="btn btn-sm btn-outline-secondary w-50">Clear</a>
+        <div class="col-md-2">
+            <label class="form-label small mb-1 fw-bold">Entity</label>
+            <select name="entity" class="form-select form-select-sm">
+                <option value="">All Entities</option>
+                <option value="Employee" th:selected="${entity == 'Employee'}">Employee</option>
+                <option value="Department" th:selected="${entity == 'Department'}">Department</option>
+                <option value="Absence" th:selected="${entity == 'Absence'}">Absence</option>
+                <option value="User" th:selected="${entity == 'User'}">User</option>
+            </select>
         </div>
 
-        <input type="hidden" name="sort" th:value="${sortField + ',' + sortDir}">
+        <div class="col-md-4 d-flex align-items-end gap-2">
+            <button type="submit" class="btn btn-sm btn-primary w-50">Filter</button>
+            <a th:href="@{/events}" class="btn btn-sm btn-outline-secondary w-50">Clear</a>
+        </div>
     </form>
 
     <div class="mb-3 text-end">
@@ -48,15 +60,15 @@
             <input type="hidden" name="from" th:value="${from}">
             <input type="hidden" name="to" th:value="${to}">
             <button type="submit" class="btn btn-sm btn-outline-warning"
-                    onclick="return confirm('Delete all logs in selected date range?')">
-                Clear by Dates
+                    onclick="return confirm('Delete logs in this date range?')">
+                Clear Dates
             </button>
         </form>
 
         <form th:action="@{/events/delete-all}" method="post" class="d-inline ms-2">
             <button type="submit" class="btn btn-sm btn-outline-danger"
-                    onclick="return confirm('Are you sure you want to delete ALL logs? This cannot be undone.')">
-                Clear All History
+                    onclick="return confirm('Delete ALL history?')">
+                Clear All
             </button>
         </form>
     </div>
@@ -65,7 +77,7 @@
         <thead class="table-dark">
         <tr>
             <th th:with="newDir=${sortField == 'timestamp' && sortDir == 'asc' ? 'desc' : 'asc'}">
-                <a th:href="@{/events(page=${page.number}, from=${from}, to=${to}, eventType=${eventType}, sort='timestamp,' + ${newDir})}"
+                <a th:href="@{/events(page=${page.number}, size=${page.size}, from=${from}, to=${to}, eventType=${eventType}, entity=${entity}, sort='timestamp,' + ${newDir})}"
                    class="text-white text-decoration-none d-block">
                     Timestamp
                     <span th:if="${sortField == 'timestamp'}" th:text="${sortDir == 'asc' ? '↑' : '↓'}"></span>
@@ -75,7 +87,7 @@
             <th>Event</th>
 
             <th th:with="newDir=${sortField == 'entityName' && sortDir == 'asc' ? 'desc' : 'asc'}">
-                <a th:href="@{/events(page=${page.number}, from=${from}, to=${to}, eventType=${eventType}, sort='entityName,' + ${newDir})}"
+                <a th:href="@{/events(page=${page.number}, size=${page.size}, from=${from}, to=${to}, eventType=${eventType}, entity=${entity}, sort='entityName,' + ${newDir})}"
                    class="text-white text-decoration-none d-block">
                     Entity
                     <span th:if="${sortField == 'entityName'}" th:text="${sortDir == 'asc' ? '↑' : '↓'}"></span>
@@ -83,7 +95,7 @@
             </th>
 
             <th th:with="newDir=${sortField == 'author' && sortDir == 'asc' ? 'desc' : 'asc'}">
-                <a th:href="@{/events(page=${page.number}, from=${from}, to=${to}, eventType=${eventType}, sort='author,' + ${newDir})}"
+                <a th:href="@{/events(page=${page.number}, size=${page.size}, from=${from}, to=${to}, eventType=${eventType}, entity=${entity}, sort='author,' + ${newDir})}"
                    class="text-white text-decoration-none d-block">
                     Author
                     <span th:if="${sortField == 'author'}" th:text="${sortDir == 'asc' ? '↑' : '↓'}"></span>
@@ -129,7 +141,7 @@
                     <button type="button" class="btn btn-sm btn-outline-info"
                             data-bs-toggle="modal"
                             th:data-bs-target="'#changesModal-' + ${log.id}">
-                        👁 Diff
+                        Diff
                     </button>
                 </div>
                 <span th:if="${log.changeDetails == null or log.changeDetails.isEmpty()}" class="text-muted small">-</span>
@@ -145,28 +157,43 @@
             </td>
         </tr>
         <tr th:if="${page.empty}">
-            <td colspan="7" class="text-center text-muted">No logs found matching criteria.</td>
+            <td colspan="7" class="text-center text-muted">No logs found.</td>
         </tr>
         </tbody>
     </table>
 
-    <nav th:if="${page.totalPages > 1}">
-        <ul class="pagination justify-content-center">
-            <li class="page-item" th:classappend="${page.first} ? 'disabled'">
-                <a class="page-link"
-                   th:href="@{/events(page=${page.number - 1}, size=${page.size}, from=${from}, to=${to}, eventType=${eventType}, sort=${sortField + ',' + sortDir})}">Previous</a>
-            </li>
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div class="btn-group" role="group">
+            <a th:if="${page.hasPrevious()}" class="btn btn-outline-secondary btn-sm"
+               th:href="@{/events(page=${page.number - 1}, size=${page.size}, from=${from}, to=${to}, eventType=${eventType}, entity=${entity}, sort=${sortField + ',' + sortDir})}">Previous</a>
+            <span th:unless="${page.hasPrevious()}" class="btn btn-outline-secondary btn-sm disabled">Previous</span>
 
-            <li class="page-item disabled">
-                <span class="page-link" th:text="${'Page ' + (page.number + 1) + ' of ' + page.totalPages}"></span>
-            </li>
+            <a th:if="${page.hasNext()}" class="btn btn-outline-secondary btn-sm"
+               th:href="@{/events(page=${page.number + 1}, size=${page.size}, from=${from}, to=${to}, eventType=${eventType}, entity=${entity}, sort=${sortField + ',' + sortDir})}">Next</a>
+            <span th:unless="${page.hasNext()}" class="btn btn-outline-secondary btn-sm disabled">Next</span>
+        </div>
 
-            <li class="page-item" th:classappend="${page.last} ? 'disabled'">
-                <a class="page-link"
-                   th:href="@{/events(page=${page.number + 1}, size=${page.size}, from=${from}, to=${to}, eventType=${eventType}, sort=${sortField + ',' + sortDir})}">Next</a>
-            </li>
-        </ul>
-    </nav>
+        <div>
+            Page <span th:text="${page.number + 1}"></span> of <span th:text="${page.totalPages == 0 ? 1 : page.totalPages}"></span>
+        </div>
+
+        <form th:action="@{/events}" method="get" class="d-flex align-items-center gap-2">
+            <input type="hidden" name="page" value="0">
+            <input type="hidden" name="sort" th:value="${sortField + ',' + sortDir}">
+            <input type="hidden" name="from" th:value="${from}">
+            <input type="hidden" name="to" th:value="${to}">
+            <input type="hidden" name="eventType" th:value="${eventType}">
+            <input type="hidden" name="entity" th:value="${entity}">
+
+            <label class="mb-0 small">Rows:</label>
+            <select name="size" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                <option th:value="10" th:selected="${page.size == 10}">10</option>
+                <option th:value="20" th:selected="${page.size == 20}">20</option>
+                <option th:value="50" th:selected="${page.size == 50}">50</option>
+                <option th:value="100" th:selected="${page.size == 100}">100</option>
+            </select>
+        </form>
+    </div>
 </div>
 
 <div th:each="log : ${page.content}">
