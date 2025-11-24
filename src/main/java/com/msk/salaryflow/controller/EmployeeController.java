@@ -45,7 +45,11 @@ public class EmployeeController {
             employee.setHireDate(Instant.now());
         }
 
-        employeeService.save(employee);
+        if(employee.getId()==null){
+            employeeService.save(employee);
+        } else{
+            employeeService.update(employee);
+        }
         return "redirect:/employees";
     }
 

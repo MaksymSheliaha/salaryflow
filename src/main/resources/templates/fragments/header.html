@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4" th:fragment="navbar">
+    <div class="container">
+        <a class="navbar-brand" th:href="@{/}">SalaryFlow</a>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-center">
+                <li class="nav-item"><a class="nav-link" th:href="@{/}">Home</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/employees}">Employees</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/departments}">Departments</a></li>
+                <li class="nav-item"><a class="nav-link" th:href="@{/absences}">Absences</a></li>
+
+                <li class="nav-item" sec:authorize="hasAuthority('ROLE_ADMIN')">
+                    <a class="nav-link text-warning" th:href="@{/users}">Users (Admin)</a>
+                </li>
+                <li class="nav-item" sec:authorize="hasAuthority('ROLE_ADMIN')">
+                    <a class="nav-link text-warning" th:href="@{/events}">Events (Admin)</a>
+                </li>
+
+                <li class="nav-item me-2" sec:authorize="isAuthenticated()">
+                    <a class="nav-link" th:href="@{/profile}">
+                        👤 My Profile
+                    </a>
+                </li>
+                <li class="nav-item ms-3">
+                    <form th:action="@{/logout}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-light">Logout</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+</body>
+</html>
