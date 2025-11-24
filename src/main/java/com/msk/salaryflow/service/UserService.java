@@ -10,7 +10,6 @@ import com.msk.salaryflow.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,7 +27,6 @@ public class UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // --- ЦЕЙ КЕШ (DTO) ЗАЛИШАЄМО, ВІН ПРАЦЮЄ ДОБРЕ ---
     @Cacheable(value = "users_page_dto", key = "{#searchTerm, #role, #enabled, #pageable.pageNumber, #pageable.pageSize, #pageable.sort.toString()}")
     public Page<UserListDto> findAll(String searchTerm, String role, Boolean enabled, Pageable pageable) {
         String search = null;
@@ -46,11 +44,9 @@ public class UserService {
         return new RestResponsePage<>(dtos, page.getPageable(), page.getTotalElements());
     }
 
-    // --- Збереження (Очищаємо кеш списків) ---
-    // CacheEvict для "users" прибираємо, бо ми більше не кешуємо окремих юзерів
     @CacheEvict(value = "users_page_dto", allEntries = true)
     @LogEvent(action = "CREATE_USER")
-    public void saveUser(User user, String rawPassword, String roleName) {
+    public User saveUser(User user, String rawPassword, String roleName) {
         User existingUser = userRepository.findByUsername(user.getUsername()).orElse(null);
         if (existingUser != null && !existingUser.getId().equals(user.getId())) {
             throw new IllegalArgumentException("Username '" + user.getUsername() + "' is already taken.");
@@ -64,32 +60,37 @@ public class UserService {
         Role role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
         user.setRoles(Set.of(role));
-        userRepository.save(user);
+
+        return userRepository.save(user);
     }
 
-    // --- ВИДАЛЕНО @Cacheable ---
-    // Брати юзера по ID з бази - це дуже швидко. Кеш тут не потрібен і створює проблеми.
     public User findById(UUID id) {
         return userRepository.findById(id).orElse(null);
     }
 
     @LogEvent(action="DELETE_USER")
     @CacheEvict(value = "users_page_dto", allEntries = true)
-    public void deleteById(UUID id) {
-        userRepository.deleteById(id);
+    public User deleteById(UUID id) {
+        User userToDelete = userRepository.findById(id).orElse(null);
+        if (userToDelete != null) {
+            userRepository.deleteById(id);
+        }
+        return userToDelete;
     }
 
+    // --- ЗМІНА ТУТ ---
+    // 1. Приймаємо User замість UUID (щоб Аспект міг зробити Diff)
+    // 2. Повертаємо User (щоб Аспект міг взяти гарне ім'я)
     @CacheEvict(value = "users_page_dto", allEntries = true)
-    public void toggleStatus(UUID id) {
-        User user = findById(id);
+    @LogEvent(action = "UPDATE_USER_STATUS")
+    public User toggleStatus(User user) {
         if (user != null && !user.getUsername().equals("admin")) {
             user.setEnabled(!user.isEnabled());
-            userRepository.save(user);
+            return userRepository.save(user);
         }
+        return user;
     }
 
-    // --- ВИДАЛЕНО @Cacheable ---
-    // Це вирішить вашу проблему з помилкою 500 у профілі
     public User findByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -104,7 +105,6 @@ public class UserService {
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
             throw new RuntimeException("Incorrect old password");
         }
-
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }

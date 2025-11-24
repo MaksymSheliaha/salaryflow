@@ -11,7 +11,6 @@ import org.springframework.util.StringUtils;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -19,64 +18,29 @@ import java.util.UUID;
 public class EventLogService {
     private final EventLogRepository eventLogRepository;
 
-    public Page<EventLog> getEventLogs(Pageable pageable, String from, String to) {
-        Instant fromInstant = null;
-        Instant toInstant = null;
+    public Page<EventLog> getEventLogs(Pageable pageable, String from, String to, String eventType, String entity) {
+        Instant fromInstant = parseFrom(from);
+        Instant toInstant = parseTo(to);
 
-        if (StringUtils.hasText(from)) {
-            LocalDate fromDate = LocalDate.parse(from);
-            fromInstant = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-        }
+        String eventPrefix = (eventType != null) ? eventType : "";
+        String entityPrefix = (entity != null) ? entity : "";
 
-        if (StringUtils.hasText(to)) {
-            LocalDate toDate = LocalDate.parse(to);
-            toInstant = toDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
-        }
-
-        if (fromInstant != null && toInstant != null) {
-            return eventLogRepository.findByTimestampBetween(fromInstant, toInstant, pageable);
-        } else if (fromInstant != null) {
-            return eventLogRepository.findByTimestampBetween(fromInstant, Instant.now(), pageable);
-        } else if (toInstant != null) {
-            return eventLogRepository.findByTimestampBetween(Instant.EPOCH, toInstant, pageable);
-        } else {
-            return eventLogRepository.findAll(pageable);
-        }
+        return eventLogRepository.searchLogs(fromInstant, toInstant, eventPrefix, entityPrefix, pageable);
     }
 
     public void deleteById(UUID id) {
         eventLogRepository.deleteById(id);
     }
 
-    public long deleteByDateRange(String from, String to) {
-        Instant fromInstant = null;
-        Instant toInstant = null;
+    // ОНОВЛЕНИЙ МЕТОД: Приймає всі параметри фільтрації
+    public long deleteByFilter(String from, String to, String eventType, String entity) {
+        Instant fromInstant = parseFrom(from);
+        Instant toInstant = parseTo(to);
 
-        if (StringUtils.hasText(from)) {
-            LocalDate fromDate = LocalDate.parse(from);
-            fromInstant = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-        }
+        String eventPrefix = (eventType != null) ? eventType : "";
+        String entityPrefix = (entity != null) ? entity : "";
 
-        if (StringUtils.hasText(to)) {
-            LocalDate toDate = LocalDate.parse(to);
-            toInstant = toDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
-        }
-
-        if (fromInstant == null && toInstant == null) {
-            long count = eventLogRepository.count();
-            eventLogRepository.deleteAll();
-            return count;
-        }
-
-        if (fromInstant == null) {
-            fromInstant = Instant.EPOCH;
-        }
-
-        if (toInstant == null) {
-            toInstant = Instant.now();
-        }
-
-        return eventLogRepository.deleteByTimestampBetween(fromInstant, toInstant);
+        return eventLogRepository.deleteByFilter(fromInstant, toInstant, eventPrefix, entityPrefix);
     }
 
     public void deleteAll() {
@@ -84,7 +48,21 @@ public class EventLogService {
     }
 
     public EventLog findById(UUID id) {
-        Optional<EventLog> optional = eventLogRepository.findById(id);
-        return optional.orElse(null);
+        return eventLogRepository.findById(id).orElse(null);
+    }
+
+    // Виніс парсинг дат в окремі методи, щоб не дублювати код
+    private Instant parseFrom(String from) {
+        if (StringUtils.hasText(from)) {
+            return LocalDate.parse(from).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        }
+        return Instant.EPOCH;
+    }
+
+    private Instant parseTo(String to) {
+        if (StringUtils.hasText(to)) {
+            return LocalDate.parse(to).plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        }
+        return Instant.now();
     }
 }

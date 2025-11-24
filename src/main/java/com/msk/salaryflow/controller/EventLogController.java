@@ -5,6 +5,8 @@ import com.msk.salaryflow.service.EventLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -23,9 +25,11 @@ public class EventLogController {
     @GetMapping
     public String listEvents(@RequestParam(required = false) String from,
                              @RequestParam(required = false) String to,
-                             Pageable pageable,
+                             @RequestParam(required = false) String eventType,
+                             @RequestParam(required = false) String entity,
+                             @PageableDefault(sort = "timestamp", direction = Sort.Direction.DESC) Pageable pageable,
                              Model model) {
-        // Перевіряємо коректність діапазону дат: from <= to
+
         if (from != null && !from.isBlank() && to != null && !to.isBlank()) {
             LocalDate fromDate = LocalDate.parse(from);
             LocalDate toDate = LocalDate.parse(to);
@@ -34,12 +38,19 @@ public class EventLogController {
             }
         }
 
-        Page<EventLog> eventLogs = eventLogService.getEventLogs(pageable, from, to);
+        Page<EventLog> eventLogs = eventLogService.getEventLogs(pageable, from, to, eventType, entity);
 
         model.addAttribute("eventLogs", eventLogs.getContent());
         model.addAttribute("page", eventLogs);
+
         model.addAttribute("from", from);
         model.addAttribute("to", to);
+        model.addAttribute("eventType", eventType);
+        model.addAttribute("entity", entity);
+
+        Sort.Order sortOrder = pageable.getSort().stream().findFirst().orElse(null);
+        model.addAttribute("sortField", sortOrder != null ? sortOrder.getProperty() : "timestamp");
+        model.addAttribute("sortDir", sortOrder != null ? sortOrder.getDirection().name().toLowerCase() : "desc");
 
         return "events/event-log-list";
     }
@@ -50,18 +61,22 @@ public class EventLogController {
                               @RequestParam(required = false) String to,
                               Pageable pageable) {
         eventLogService.deleteById(id);
+        return "redirect:/events?from=" + (from != null ? from : "") + "&to=" + (to != null ? to : "") + "&page=" + pageable.getPageNumber();
+    }
+
+    // --- ОНОВЛЕНИЙ МЕТОД (Замість старого deleteByFilter) ---
+    @PostMapping("/delete-by-filter")
+    public String deleteByFilter(@RequestParam(required = false) String from,
+                                 @RequestParam(required = false) String to,
+                                 @RequestParam(required = false) String eventType,
+                                 @RequestParam(required = false) String entity) {
+
+        eventLogService.deleteByFilter(from, to, eventType, entity);
 
         return "redirect:/events?from=" + (from != null ? from : "") +
                 "&to=" + (to != null ? to : "") +
-                "&page=" + pageable.getPageNumber() +
-                "&size=" + pageable.getPageSize();
-    }
-
-    @PostMapping("/delete-by-filter")
-    public String deleteByFilter(@RequestParam(required = false) String from,
-                                 @RequestParam(required = false) String to) {
-        eventLogService.deleteByDateRange(from, to);
-        return "redirect:/events";
+                "&eventType=" + (eventType != null ? eventType : "") +
+                "&entity=" + (entity != null ? entity : "");
     }
 
     @PostMapping("/delete-all")
@@ -75,28 +90,24 @@ public class EventLogController {
                              @RequestParam("targetId") String targetId,
                              @RequestParam("action") String action,
                              @RequestParam("logId") UUID logId) {
-        // Якщо дія видалення – показуємо raw-сторінку для самого лог-запису
         if (action != null && action.toUpperCase().startsWith("DELETE")) {
             return "redirect:/events/" + logId + "/raw";
         }
-
         String redirectUrl;
         switch (entityName) {
             case "Employee" -> redirectUrl = "/employees/" + targetId;
             case "Department" -> redirectUrl = "/departments/" + targetId;
             case "Absence" -> redirectUrl = "/absences/" + targetId;
+            case "User" -> redirectUrl = "/users/" + targetId;
             default -> redirectUrl = "/";
         }
-
         return "redirect:" + redirectUrl;
     }
 
     @GetMapping("/{id}/raw")
     public String viewRawEvent(@PathVariable UUID id, Model model) {
         EventLog log = eventLogService.findById(id);
-        if (log == null) {
-            return "redirect:/events";
-        }
+        if (log == null) return "redirect:/events";
 
         Map<String, Object> rawData = new LinkedHashMap<>();
         rawData.put("ID", log.getId());
@@ -108,7 +119,6 @@ public class EventLogController {
 
         model.addAttribute("log", log);
         model.addAttribute("rawData", rawData);
-
         return "events/event-log-raw";
     }
 }
