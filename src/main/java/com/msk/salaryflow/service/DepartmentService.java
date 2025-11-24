@@ -1,9 +1,10 @@
 package com.msk.salaryflow.service;
 
+import com.msk.salaryflow.aspect.annotation.LogEvent;
 import com.msk.salaryflow.entity.Department;
 import com.msk.salaryflow.entity.DepartmentInfo;
 import com.msk.salaryflow.model.DepartmentSearchRequest;
-import com.msk.salaryflow.model.PageResponse;
+import com.msk.salaryflow.model.RestResponsePage;
 import com.msk.salaryflow.repository.DepartmentInfoRepository;
 import com.msk.salaryflow.repository.DepartmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +23,15 @@ public class DepartmentService {
     private final DepartmentRepository departmentRepository;
     private final DepartmentInfoRepository departmentInfoRepository;
 
-    @CacheEvict(value = { "department", "department_pages" }, allEntries = true)
+    @LogEvent(action = "CREATE_DEPARTMENT")
+    @CacheEvict(value = { "department", "department_pages", "departmentsSearch" }, allEntries = true)
     public Department save(Department department) {
+        return departmentRepository.save(department);
+    }
+
+    @LogEvent(action = "UPDATE_DEPARTMENT")
+    @CacheEvict(value = { "department", "department_pages", "departmentsSearch" }, allEntries = true)
+    public Department update(Department department) {
         return departmentRepository.save(department);
     }
 
@@ -39,26 +47,38 @@ public class DepartmentService {
     }
 
     @Cacheable(value = "departmentsSearch", key = "#request.cacheKey()")
-    public PageResponse<DepartmentInfo> findAll(DepartmentSearchRequest request) {
+    public RestResponsePage<DepartmentInfo> findAll(DepartmentSearchRequest request) {
+        Page<DepartmentInfo> resultPage;
+
         if (!request.isEmployeeInfo()) {
-            return PageResponse.from(findAll(request.getSearchTerm(), request.getPageable()).map(this::map));
+            Page<Department> depPage = findAll(request.getSearchTerm(), request.getPageable());
+            resultPage = depPage.map(this::map);
+        } else {
+            if (request.getSearchTerm() == null || request.getSearchTerm().trim().isEmpty()) {
+                resultPage = departmentInfoRepository.findAll(request.getPageable());
+            } else {
+                resultPage = departmentInfoRepository.searchDepartments(request.getSearchTerm(), request.getPageable());
+            }
         }
 
-        if (request.getSearchTerm() == null || request.getSearchTerm().trim().isEmpty()) {
-            return PageResponse.from(departmentInfoRepository.findAll(request.getPageable()));
-        }
-
-        return PageResponse.from(departmentInfoRepository.searchDepartments(request.getSearchTerm(), request.getPageable()));
+        return new RestResponsePage<>(resultPage.getContent(), resultPage.getPageable(), resultPage.getTotalElements());
     }
 
-    @CacheEvict(value = { "department", "department_pages" }, allEntries = true)
-    public void deleteById(UUID id) {
+    @LogEvent(action = "DELETE_DEPARTMENT")
+    @CacheEvict(value = { "department", "department_pages", "departmentsSearch" }, allEntries = true)
+    public Department deleteById(UUID id) {
+        Department toDelete = departmentRepository.findById(id).orElse(null);
         departmentRepository.deleteById(id);
+        return toDelete;
     }
 
     @Cacheable(value = "department", key = "#id")
     public Department findById(UUID id) {
         return departmentRepository.findById(id).orElse(null);
+    }
+
+    public DepartmentInfo findInfoById(UUID id) {
+        return departmentInfoRepository.findById(id).orElse(null);
     }
 
     private DepartmentInfo map(Department department) {
@@ -68,5 +88,4 @@ public class DepartmentService {
         info.setLocation(department.getLocation());
         return info;
     }
-
 }
