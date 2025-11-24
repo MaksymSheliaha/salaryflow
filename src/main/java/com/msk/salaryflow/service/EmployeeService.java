@@ -20,6 +20,12 @@ public class EmployeeService {
 
     @CacheEvict(value = {"employee", "employee_pages"}, allEntries = true)
     @LogEvent(action = "UPDATE_EMPLOYEE")
+    public Employee update(Employee employee) {
+        return employeeRepository.save(employee);
+    }
+
+    @CacheEvict(value = {"employee", "employee_pages"}, allEntries = true)
+    @LogEvent(action = "CREATE_EMPLOYEE")
     public Employee save(Employee employee) {
         return employeeRepository.save(employee);
     }
@@ -30,8 +36,10 @@ public class EmployeeService {
 
     @CacheEvict(value = {"employee", "employee_pages"}, allEntries = true)
     @LogEvent(action = "DELETE_EMPLOYEE")
-    public void deleteById(UUID id){
+    public Employee deleteById(UUID id){
+        Employee toDelete = employeeRepository.findById(id).orElse(null);
         employeeRepository.deleteById(id);
+        return toDelete;
     }
 
     @Cacheable(value = "employee", key = "#id")
