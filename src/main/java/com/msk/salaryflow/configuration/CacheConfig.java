@@ -49,28 +49,4 @@ public class CacheConfig {
                 .cacheDefaults(config)
                 .build();
     }
-
-    @Bean("mongoRedisCacheManager")
-    public RedisCacheManager mongoRedisCacheManager(RedisConnectionFactory mongoRedisConnectionFactory) {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-        // Тут у вас вже було правильно (NON_FINAL), тому Mongo працювало б стабільно
-        mapper.activateDefaultTyping(
-                LaissezFaireSubTypeValidator.instance,
-                ObjectMapper.DefaultTyping.NON_FINAL,
-                JsonTypeInfo.As.PROPERTY
-        );
-
-        GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(mapper);
-
-        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(serializer))
-                .entryTtl(Duration.ofHours(1));
-
-        return RedisCacheManager.builder(mongoRedisConnectionFactory)
-                .cacheDefaults(config)
-                .build();
-    }
 }
