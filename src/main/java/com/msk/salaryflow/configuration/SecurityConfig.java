@@ -15,7 +15,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // Дозволяє використовувати анотації @PreAuthorize над методами
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -24,33 +24,20 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // Вимикаємо CSRF для простоти (на проді краще залишити)
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
                         .requestMatchers("/forgot-password", "/reset-password").permitAll()
-                        // 1. Керування користувачами - Тільки Адмін (як було)
                         .requestMatchers("/users/**").hasAuthority("ROLE_ADMIN")
-
-                        // --- НОВІ ПРАВИЛА ДЛЯ ДЕПАРТАМЕНТІВ ---
-
-                        // 2. СТВОРЕННЯ, РЕДАГУВАННЯ, ВИДАЛЕННЯ департаментів - Тільки АДМІН
-                        // (Тобто URL, які змінюють дані)
+                        .requestMatchers("/events/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/departments/add", "/departments/save", "/departments/update", "/departments/delete").hasAuthority("ROLE_ADMIN")
-
-                        // 3. ПЕРЕГЛЯД департаментів - Доступний всім (і Менеджерам теж)
-                        // (Це потрібно, щоб менеджер міг вибрати департамент для працівника)
                         .requestMatchers("/departments/**").authenticated()
-
-                        // ---------------------------------------
-
-                        // Всі інші запити (працівники, відпустки) доступні всім авторизованим
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
-                        // Використовуємо стандартну сторінку логіну від Spring Security
                         .loginPage("/login")
                         .permitAll()
-                        .defaultSuccessUrl("/", true) // Після успішного входу - на Головну
+                        .defaultSuccessUrl("/", true)
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
@@ -63,7 +50,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // Використовуємо BCrypt для шифрування паролів
         return new BCryptPasswordEncoder();
     }
 

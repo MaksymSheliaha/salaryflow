@@ -1,5 +1,6 @@
 package com.msk.salaryflow.service;
 
+import com.msk.salaryflow.aspect.annotation.LogEvent;
 import com.msk.salaryflow.entity.Absence;
 import com.msk.salaryflow.entity.AbsenceType;
 import com.msk.salaryflow.entity.Employee;
@@ -35,7 +36,6 @@ public class AbsenceService {
     private final EmployeeRepository employeeRepository;
 
     @Cacheable(value = "absences_page", key = "{#searchTerm, #typeFilter, #pageable.pageNumber, #pageable.pageSize, #pageable.sort.toString()}")
-    @Transactional(readOnly = true)
     public Page<AbsenceResponse> findAll(String searchTerm, AbsenceType typeFilter, Pageable pageable) {
         Pageable fixedPageable = mapSortFields(pageable);
         Specification<Absence> spec = createSpecification(searchTerm, typeFilter);
@@ -46,7 +46,6 @@ public class AbsenceService {
         return new RestResponsePage<>(responseList, fixedPageable, pageResult.getTotalElements());
     }
     @Cacheable(value = "absence_response", key = "#id")
-    @Transactional(readOnly = true)
     public AbsenceResponse findByIdResponse(UUID id) {
         return absenceRepository.findById(id)
                 .map(this::mapToResponse)
@@ -56,11 +55,12 @@ public class AbsenceService {
     public Optional<Absence> findById(UUID id) {
         return absenceRepository.findById(id);
     }
+
     @Caching(evict = {
             @CacheEvict(value = "absence_response", key = "#absence.id"),
             @CacheEvict(value = "absences_page", allEntries = true)
     })
-    @Transactional
+    @LogEvent(action = "CREATE_ABSENCE")
     public Absence save(Absence absence) {
         return absenceRepository.save(absence);
     }
@@ -69,10 +69,11 @@ public class AbsenceService {
             @CacheEvict(value = "absence_response", key = "#id"),
             @CacheEvict(value = "absences_page", allEntries = true)
     })
-    @Transactional
+    @LogEvent(action = "DELETE_ABSENCE")
     public void deleteById(UUID id) {
         absenceRepository.deleteById(id);
     }
+
     private Pageable mapSortFields(Pageable pageable) {
         if (pageable.getSort().isUnsorted()) {
             return pageable;

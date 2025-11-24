@@ -1,5 +1,6 @@
 package com.msk.salaryflow.service;
 
+import com.msk.salaryflow.aspect.annotation.LogEvent;
 import com.msk.salaryflow.entity.Department;
 import com.msk.salaryflow.entity.DepartmentInfo;
 import com.msk.salaryflow.model.DepartmentSearchRequest;
@@ -22,8 +23,15 @@ public class DepartmentService {
     private final DepartmentRepository departmentRepository;
     private final DepartmentInfoRepository departmentInfoRepository;
 
+    @LogEvent(action = "CREATE_DEPARTMENT")
     @CacheEvict(value = { "department", "department_pages", "departmentsSearch" }, allEntries = true)
     public Department save(Department department) {
+        return departmentRepository.save(department);
+    }
+
+    @LogEvent(action = "UPDATE_DEPARTMENT")
+    @CacheEvict(value = { "department", "department_pages", "departmentsSearch" }, allEntries = true)
+    public Department update(Department department) {
         return departmentRepository.save(department);
     }
 
@@ -56,6 +64,7 @@ public class DepartmentService {
         return new RestResponsePage<>(resultPage.getContent(), resultPage.getPageable(), resultPage.getTotalElements());
     }
 
+    @LogEvent(action = "DELETE_DEPARTMENT")
     @CacheEvict(value = { "department", "department_pages", "departmentsSearch" }, allEntries = true)
     public void deleteById(UUID id) {
         departmentRepository.deleteById(id);
