@@ -23,17 +23,30 @@ public class LoggingAspect {
     @AfterReturning(pointcut = "@annotation(logEvent)", returning = "result")
     public void logAfterMethod(JoinPoint joinPoint, LogEvent logEvent, Object result) {
         String action = logEvent.action();
-        String entityName = joinPoint.getSignature().getDeclaringType().getSimpleName();
+        String entityName = result != null ? result.getClass().getSimpleName() : "Unknown";
+
 
         String currentUser = getCurrentUsername();
 
-        saveLogAsync(action, entityName, currentUser, result);
+
+        String targetId = null;
+        if (result != null) {
+            try {
+                var idField = result.getClass().getDeclaredField("id");
+                idField.setAccessible(true);
+                Object idValue = idField.get(result);
+                targetId = (idValue != null) ? idValue.toString() : null;
+            } catch (NoSuchFieldException | IllegalAccessException ignored) {
+            }
+        }
+
+        saveLogAsync(action, entityName, currentUser, targetId);
     }
 
     @Async
-    public void saveLogAsync(String action, String entity, String user, Object payload) {
+    public void saveLogAsync(String action, String entity, String user, String targetId) {
         try {
-            EventLog log = new EventLog(action, entity, user, payload);
+            EventLog log = new EventLog(action, entity, user, targetId);
             eventLogRepository.save(log);
         } catch (Exception e) {
             System.err.println("Failed to write audit log to MongoDB: " + e.getMessage());

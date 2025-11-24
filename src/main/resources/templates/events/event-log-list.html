@@ -50,11 +50,27 @@
     <table class="table table-bordered table-striped">
         <thead class="table-dark">
         <tr>
-            <th>Timestamp</th>
+            <th data-column-id="timestamp" class="js-column-cell"
+                th:with="cs=${param.sort != null ? param.sort[0] : ''},
+                         tsActive=${#strings.startsWith(cs,'timestamp,')},
+                         tsDesc=${tsActive ? #strings.contains(cs,',desc') : false},
+                         nextDir=${(tsActive and not tsDesc) ? 'desc' : 'asc'}">
+                <a th:href="@{/events(sort=${'timestamp,' + nextDir},
+                                      page=${page.number},
+                                      size=${param.size != null ? param.size[0] : page.size},
+                                      from=${param.from != null ? param.from[0] : from},
+                                      to=${param.to != null ? param.to[0] : to})}"
+                   class="link-light text-decoration-none">
+                    Timestamp
+                    <span style="display:inline-block; width: 12px;"
+                          th:text="${tsActive} ? (${tsDesc} ? '↓' : '↑') : ''">
+                    </span>
+                </a>
+            </th>
             <th>Event</th>
             <th>Entity</th>
             <th>Author</th>
-            <th>Details</th>
+            <th>Target</th>
             <th>Actions</th>
         </tr>
         </thead>
@@ -64,7 +80,15 @@
             <td th:text="${log.event}"></td>
             <td th:text="${log.entityName}"></td>
             <td th:text="${log.author}"></td>
-            <td th:text="${log.details}"></td>
+            <td>
+                <span th:if="${log.targetId == null}">-</span>
+                <span th:if="${log.targetId != null}">
+                    <a th:href="@{/events/open-target(entity=${log.entityName}, id=${log.targetId})}"
+                       class="btn btn-sm btn-outline-primary">
+                        Open target
+                    </a>
+                </span>
+            </td>
             <td>
                 <form th:action="@{'/events/' + ${log.id} + '/delete'}" method="post" class="d-inline">
                     <input type="hidden" name="from" th:value="${from}">
@@ -108,4 +132,3 @@
 
 </body>
 </html>
-

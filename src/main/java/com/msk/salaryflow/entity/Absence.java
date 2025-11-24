@@ -18,7 +18,7 @@ public class Absence {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "employee_id", insertable = false, updatable = false)
     private Employee employee;
 

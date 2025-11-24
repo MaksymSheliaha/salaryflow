@@ -57,4 +57,19 @@ public class EventLogController {
         eventLogService.deleteAll();
         return "redirect:/events";
     }
+
+    @GetMapping("/open-target")
+    public String openTarget(@RequestParam("entity") String entityName,
+                           @RequestParam("id") String targetId) {
+        String redirectUrl;
+
+        switch (entityName) {
+            case "Employee" -> redirectUrl = "/employees/" + targetId;
+            case "Department" -> redirectUrl = "/departments/" + targetId;
+            case "Absence" -> redirectUrl = "/absences/" + targetId;
+            default -> redirectUrl = "/";
+        }
+
+        return "redirect:"+redirectUrl;
+    }
 }

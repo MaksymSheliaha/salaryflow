@@ -16,14 +16,14 @@ public class EventLog {
     private Instant timestamp;
     private String entityName;
     private String author;
-    private Object details;
+    private String targetId;
 
-    public EventLog(String event, String entityName, String author, Object details) {
+    public EventLog(String event, String entityName, String author, String targetId) {
         this.id = UUID.randomUUID();
         this.event = event;
         this.entityName = entityName;
         this.author = author;
-        this.details = details;
+        this.targetId = targetId;
         this.timestamp = Instant.now();
     }
 }

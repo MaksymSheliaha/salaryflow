@@ -73,6 +73,7 @@ public class UserService {
         return userRepository.findById(id).orElse(null);
     }
 
+    @LogEvent(action="DELETE_USER")
     @CacheEvict(value = "users_page_dto", allEntries = true)
     public void deleteById(UUID id) {
         userRepository.deleteById(id);
