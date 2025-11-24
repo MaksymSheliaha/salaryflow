@@ -98,7 +98,7 @@ public class DepartmentController {
         Department department = departmentService.findById(departmentId);
         if (employee != null && department != null) {
             employee.setDepartment(department);
-            employeeService.save(employee);
+            employeeService.update(employee);
         }
         return "redirect:/employees";
     }
