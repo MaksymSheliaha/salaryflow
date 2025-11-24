@@ -18,27 +18,10 @@ import java.util.UUID;
 public class EventLogService {
     private final EventLogRepository eventLogRepository;
 
-    // Оновлена сигнатура: додали String entity
     public Page<EventLog> getEventLogs(Pageable pageable, String from, String to, String eventType, String entity) {
-        Instant fromInstant;
-        Instant toInstant;
+        Instant fromInstant = parseFrom(from);
+        Instant toInstant = parseTo(to);
 
-        if (StringUtils.hasText(from)) {
-            LocalDate fromDate = LocalDate.parse(from);
-            fromInstant = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-        } else {
-            fromInstant = Instant.EPOCH;
-        }
-
-        if (StringUtils.hasText(to)) {
-            LocalDate toDate = LocalDate.parse(to);
-            toInstant = toDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
-        } else {
-            toInstant = Instant.now();
-        }
-
-        // Підготовка фільтрів для Regex
-        // Якщо null або пусто -> передаємо порожній рядок (знайде все)
         String eventPrefix = (eventType != null) ? eventType : "";
         String entityPrefix = (entity != null) ? entity : "";
 
@@ -49,10 +32,15 @@ public class EventLogService {
         eventLogRepository.deleteById(id);
     }
 
-    public long deleteByDateRange(String from, String to) {
-        Instant fromInstant = (StringUtils.hasText(from)) ? LocalDate.parse(from).atStartOfDay(ZoneId.systemDefault()).toInstant() : Instant.EPOCH;
-        Instant toInstant = (StringUtils.hasText(to)) ? LocalDate.parse(to).plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant() : Instant.now();
-        return eventLogRepository.deleteByTimestampBetween(fromInstant, toInstant);
+    // ОНОВЛЕНИЙ МЕТОД: Приймає всі параметри фільтрації
+    public long deleteByFilter(String from, String to, String eventType, String entity) {
+        Instant fromInstant = parseFrom(from);
+        Instant toInstant = parseTo(to);
+
+        String eventPrefix = (eventType != null) ? eventType : "";
+        String entityPrefix = (entity != null) ? entity : "";
+
+        return eventLogRepository.deleteByFilter(fromInstant, toInstant, eventPrefix, entityPrefix);
     }
 
     public void deleteAll() {
@@ -61,5 +49,20 @@ public class EventLogService {
 
     public EventLog findById(UUID id) {
         return eventLogRepository.findById(id).orElse(null);
+    }
+
+    // Виніс парсинг дат в окремі методи, щоб не дублювати код
+    private Instant parseFrom(String from) {
+        if (StringUtils.hasText(from)) {
+            return LocalDate.parse(from).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        }
+        return Instant.EPOCH;
+    }
+
+    private Instant parseTo(String to) {
+        if (StringUtils.hasText(to)) {
+            return LocalDate.parse(to).plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        }
+        return Instant.now();
     }
 }

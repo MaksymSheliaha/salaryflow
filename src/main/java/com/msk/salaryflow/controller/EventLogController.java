@@ -26,7 +26,7 @@ public class EventLogController {
     public String listEvents(@RequestParam(required = false) String from,
                              @RequestParam(required = false) String to,
                              @RequestParam(required = false) String eventType,
-                             @RequestParam(required = false) String entity, // Новий фільтр
+                             @RequestParam(required = false) String entity,
                              @PageableDefault(sort = "timestamp", direction = Sort.Direction.DESC) Pageable pageable,
                              Model model) {
 
@@ -38,13 +38,11 @@ public class EventLogController {
             }
         }
 
-        // Передаємо entity у сервіс
         Page<EventLog> eventLogs = eventLogService.getEventLogs(pageable, from, to, eventType, entity);
 
         model.addAttribute("eventLogs", eventLogs.getContent());
         model.addAttribute("page", eventLogs);
 
-        // Зберігаємо параметри фільтрів
         model.addAttribute("from", from);
         model.addAttribute("to", to);
         model.addAttribute("eventType", eventType);
@@ -66,11 +64,19 @@ public class EventLogController {
         return "redirect:/events?from=" + (from != null ? from : "") + "&to=" + (to != null ? to : "") + "&page=" + pageable.getPageNumber();
     }
 
+    // --- ОНОВЛЕНИЙ МЕТОД (Замість старого deleteByFilter) ---
     @PostMapping("/delete-by-filter")
     public String deleteByFilter(@RequestParam(required = false) String from,
-                                 @RequestParam(required = false) String to) {
-        eventLogService.deleteByDateRange(from, to);
-        return "redirect:/events";
+                                 @RequestParam(required = false) String to,
+                                 @RequestParam(required = false) String eventType,
+                                 @RequestParam(required = false) String entity) {
+
+        eventLogService.deleteByFilter(from, to, eventType, entity);
+
+        return "redirect:/events?from=" + (from != null ? from : "") +
+                "&to=" + (to != null ? to : "") +
+                "&eventType=" + (eventType != null ? eventType : "") +
+                "&entity=" + (entity != null ? entity : "");
     }
 
     @PostMapping("/delete-all")

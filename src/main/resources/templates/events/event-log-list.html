@@ -59,16 +59,19 @@
         <form th:action="@{/events/delete-by-filter}" method="post" class="d-inline">
             <input type="hidden" name="from" th:value="${from}">
             <input type="hidden" name="to" th:value="${to}">
+            <input type="hidden" name="eventType" th:value="${eventType}">
+            <input type="hidden" name="entity" th:value="${entity}">
+
             <button type="submit" class="btn btn-sm btn-outline-warning"
-                    onclick="return confirm('Delete logs in this date range?')">
-                Clear Dates
+                    onclick="return confirm('Delete ALL logs matching current filter parameters?')">
+                Delete by Filter
             </button>
         </form>
 
         <form th:action="@{/events/delete-all}" method="post" class="d-inline ms-2">
             <button type="submit" class="btn btn-sm btn-outline-danger"
-                    onclick="return confirm('Delete ALL history?')">
-                Clear All
+                    onclick="return confirm('Are you sure you want to delete ALL logs? This cannot be undone.')">
+                Clear All History
             </button>
         </form>
     </div>
