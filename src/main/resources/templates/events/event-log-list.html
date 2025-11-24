@@ -29,6 +29,10 @@
         </div>
     </form>
 
+    <div th:if="${error != null}" class="alert alert-danger" role="alert">
+        <span th:text="${error}"></span>
+    </div>
+
     <div class="mb-3">
         <form th:action="@{/events/delete-by-filter}" method="post" class="d-inline">
             <input type="hidden" name="from" th:value="${from}">

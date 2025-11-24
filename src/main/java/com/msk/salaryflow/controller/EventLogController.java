@@ -9,6 +9,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -24,6 +25,15 @@ public class EventLogController {
                              @RequestParam(required = false) String to,
                              Pageable pageable,
                              Model model) {
+        // Перевіряємо коректність діапазону дат: from <= to
+        if (from != null && !from.isBlank() && to != null && !to.isBlank()) {
+            LocalDate fromDate = LocalDate.parse(from);
+            LocalDate toDate = LocalDate.parse(to);
+            if (fromDate.isAfter(toDate)) {
+                return "redirect:/events";
+            }
+        }
+
         Page<EventLog> eventLogs = eventLogService.getEventLogs(pageable, from, to);
 
         model.addAttribute("eventLogs", eventLogs.getContent());

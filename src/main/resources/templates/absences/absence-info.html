@@ -38,6 +38,7 @@
             </dl>
 
             <div class="mt-4">
+                <button type="button" class="btn btn-outline-secondary" onclick="history.back()">Back</button>
                 <a class="btn btn-secondary" th:href="@{/absences}">Back to List</a>
                 <a class="btn btn-primary" th:href="@{/absences/update(id=${absence.id})}">Edit</a>
             </div>
