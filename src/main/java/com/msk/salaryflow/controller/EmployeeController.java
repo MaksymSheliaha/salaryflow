@@ -26,9 +26,13 @@ public class EmployeeController {
     private final DepartmentService departmentService;
 
     @GetMapping
-    private String getEmployees(Model model, Pageable pageable){
-        Page<Employee> employees = employeeService.findAll(pageable);
-        model.addAttribute("employees", employees.toList());
+    private String getEmployees(Model model,
+                                @RequestParam(value = "term", required = false) String term,
+                                Pageable pageable){
+        // используем сервисный search — вернёт всё при пустом term
+        Page<Employee> employees = employeeService.search(term, pageable);
+        model.addAttribute("employees", employees);
+        model.addAttribute("term", term);
         return "employees/employee-list";
     }
 
@@ -62,7 +66,7 @@ public class EmployeeController {
         model.addAttribute("employee", employee);
         model.addAttribute("genders", Gender.values());
         model.addAttribute("positions", Position.values());
-        model.addAttribute("departments", departmentService.findAll(Pageable.unpaged()).getContent());
+        model.addAttribute("departments", departmentService.findAll(org.springframework.data.domain.Pageable.unpaged()).getContent());
         return "employees/employee-form";
     }
 
@@ -74,7 +78,7 @@ public class EmployeeController {
         model.addAttribute("employee", employee);
         model.addAttribute("genders", Gender.values());
         model.addAttribute("positions", Position.values());
-        model.addAttribute("departments", departmentService.findAll(Pageable.unpaged()).getContent());
+        model.addAttribute("departments", departmentService.findAll(org.springframework.data.domain.Pageable.unpaged()).getContent());
         return "employees/employee-form";
     }
 
