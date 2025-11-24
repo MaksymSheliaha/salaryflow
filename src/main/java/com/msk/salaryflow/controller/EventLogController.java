@@ -94,6 +94,7 @@ public class EventLogController {
             case "Employee" -> redirectUrl = "/employees/" + targetId;
             case "Department" -> redirectUrl = "/departments/" + targetId;
             case "Absence" -> redirectUrl = "/absences/" + targetId;
+            case "User" -> redirectUrl = "/users/" + targetId;
             default -> redirectUrl = "/";
         }
         return "redirect:" + redirectUrl;

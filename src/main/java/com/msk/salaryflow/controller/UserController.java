@@ -87,4 +87,13 @@ public class UserController {
 
         return "redirect:/users";
     }
+    @GetMapping("/{id}")
+    public String getUser(Model model, @PathVariable("id") UUID id){
+        User user = userService.findById(id);
+        if(user == null){
+            return "redirect:/users";
+        }
+        model.addAttribute("user", user);
+        return "users/user-info";
+    }
 }
