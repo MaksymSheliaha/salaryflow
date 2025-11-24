@@ -1,5 +1,6 @@
 package com.msk.salaryflow.service;
 
+import com.msk.salaryflow.aspect.annotation.LogEvent;
 import com.msk.salaryflow.entity.Role;
 import com.msk.salaryflow.entity.User;
 import com.msk.salaryflow.model.RestResponsePage;
@@ -48,6 +49,7 @@ public class UserService {
     // --- Збереження (Очищаємо кеш списків) ---
     // CacheEvict для "users" прибираємо, бо ми більше не кешуємо окремих юзерів
     @CacheEvict(value = "users_page_dto", allEntries = true)
+    @LogEvent(action = "CREATE_USER")
     public void saveUser(User user, String rawPassword, String roleName) {
         User existingUser = userRepository.findByUsername(user.getUsername()).orElse(null);
         if (existingUser != null && !existingUser.getId().equals(user.getId())) {
@@ -93,6 +95,7 @@ public class UserService {
     }
 
     @CacheEvict(value = "users_page_dto", allEntries = true)
+    @LogEvent(action = "CHANGE_PASSWORD")
     public void changePassword(String username, String oldPassword, String newPassword) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
