@@ -38,8 +38,7 @@ public class UserController {
         );
 
         model.addAttribute("users", uiPage.getContent());
-        model.addAttribute("page", uiPage); // Передаємо "виправлену" сторінку
-
+        model.addAttribute("page", uiPage);
         model.addAttribute("currentSearch", searchTerm);
         model.addAttribute("currentRole", role);
         model.addAttribute("currentStatus", status);
@@ -57,15 +56,14 @@ public class UserController {
     public String saveUser(@ModelAttribute User user,
                            @RequestParam(required = false) String rawPassword,
                            @RequestParam("role") String roleName,
-                           Model model) { // <--- Додали Model
+                           Model model) {
         try {
             userService.saveUser(user, rawPassword, roleName);
             return "redirect:/users";
         } catch (IllegalArgumentException e) {
-            // Якщо зловили помилку (наприклад, дублікат імені)
             model.addAttribute("error", e.getMessage());
-            model.addAttribute("user", user); // Повертаємо введені дані, щоб не зникли
-            return "users/user-form"; // Повертаємо на сторінку форми, а не редірект
+            model.addAttribute("user", user);
+            return "users/user-form";
         }
     }
 
@@ -75,9 +73,18 @@ public class UserController {
         return "redirect:/users";
     }
 
+    // --- ЗМІНА ТУТ ---
     @GetMapping("/toggle")
     public String toggleStatus(@RequestParam("id") UUID id) {
-        userService.toggleStatus(id);
+        // 1. Спочатку знаходимо юзера
+        User user = userService.findById(id);
+
+        // 2. Якщо він є - передаємо ЦІЛИЙ об'єкт у сервіс
+        // Це запустить Аспект з правильними даними
+        if (user != null) {
+            userService.toggleStatus(user);
+        }
+
         return "redirect:/users";
     }
 }

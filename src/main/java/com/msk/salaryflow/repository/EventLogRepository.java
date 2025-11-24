@@ -10,5 +10,7 @@ import java.util.UUID;
 
 public interface EventLogRepository extends MongoRepository<EventLog, UUID> {
     Page<EventLog> findByTimestampBetween(Instant from, Instant to, Pageable pageable);
+    Page<EventLog> findByTimestampBetweenAndEventStartingWith(Instant from, Instant to, String eventPrefix, Pageable pageable);
+
     long deleteByTimestampBetween(Instant from, Instant to);
 }

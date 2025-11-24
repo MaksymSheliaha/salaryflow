@@ -14,50 +14,82 @@
         <h3>Event Logs</h3>
     </div>
 
-    <form class="row g-3 mb-3" method="get" th:action="@{/events}">
+    <form class="row g-2 mb-3 bg-light p-2 rounded border" method="get" th:action="@{/events}">
         <div class="col-md-3">
-            <label for="from" class="form-label">From date</label>
-            <input type="date" id="from" name="from" class="form-control" th:value="${from}">
+            <label class="form-label small mb-1 fw-bold">From date</label>
+            <input type="date" name="from" class="form-control form-control-sm" th:value="${from}">
         </div>
         <div class="col-md-3">
-            <label for="to" class="form-label">To date</label>
-            <input type="date" id="to" name="to" class="form-control" th:value="${to}">
+            <label class="form-label small mb-1 fw-bold">To date</label>
+            <input type="date" name="to" class="form-control form-control-sm" th:value="${to}">
         </div>
-        <div class="col-md-3 d-flex align-items-end">
-            <button type="submit" class="btn btn-primary me-2">Filter</button>
-            <a th:href="@{/events}" class="btn btn-secondary">Reset</a>
+
+        <div class="col-md-3">
+            <label class="form-label small mb-1 fw-bold">Event Type</label>
+            <select name="eventType" class="form-select form-select-sm">
+                <option value="">All Events</option>
+                <option value="CREATE" th:selected="${eventType == 'CREATE'}">CREATE (Add)</option>
+                <option value="UPDATE" th:selected="${eventType == 'UPDATE'}">UPDATE (Edit)</option>
+                <option value="DELETE" th:selected="${eventType == 'DELETE'}">DELETE (Remove)</option>
+                <option value="LOGIN" th:selected="${eventType == 'LOGIN'}">LOGIN</option>
+            </select>
         </div>
+
+        <div class="col-md-3 d-flex align-items-end gap-2">
+            <button type="submit" class="btn btn-sm btn-primary w-50">Apply Filter</button>
+            <a th:href="@{/events}" class="btn btn-sm btn-outline-secondary w-50">Clear</a>
+        </div>
+
+        <input type="hidden" name="sort" th:value="${sortField + ',' + sortDir}">
     </form>
 
-    <div th:if="${error != null}" class="alert alert-danger" role="alert">
-        <span th:text="${error}"></span>
-    </div>
-
-    <div class="mb-3">
+    <div class="mb-3 text-end">
         <form th:action="@{/events/delete-by-filter}" method="post" class="d-inline">
             <input type="hidden" name="from" th:value="${from}">
             <input type="hidden" name="to" th:value="${to}">
-            <button type="submit" class="btn btn-warning"
+            <button type="submit" class="btn btn-sm btn-outline-warning"
                     onclick="return confirm('Delete all logs in selected date range?')">
-                Delete by filter
+                Clear by Dates
             </button>
         </form>
 
         <form th:action="@{/events/delete-all}" method="post" class="d-inline ms-2">
-            <button type="submit" class="btn btn-danger"
+            <button type="submit" class="btn btn-sm btn-outline-danger"
                     onclick="return confirm('Are you sure you want to delete ALL logs? This cannot be undone.')">
-                Delete all logs
+                Clear All History
             </button>
         </form>
     </div>
 
-    <table class="table table-bordered table-striped">
+    <table class="table table-bordered table-striped table-hover">
         <thead class="table-dark">
         <tr>
-            <th>Timestamp</th>
+            <th th:with="newDir=${sortField == 'timestamp' && sortDir == 'asc' ? 'desc' : 'asc'}">
+                <a th:href="@{/events(page=${page.number}, from=${from}, to=${to}, eventType=${eventType}, sort='timestamp,' + ${newDir})}"
+                   class="text-white text-decoration-none d-block">
+                    Timestamp
+                    <span th:if="${sortField == 'timestamp'}" th:text="${sortDir == 'asc' ? '↑' : '↓'}"></span>
+                </a>
+            </th>
+
             <th>Event</th>
-            <th>Entity</th>
-            <th>Author</th>
+
+            <th th:with="newDir=${sortField == 'entityName' && sortDir == 'asc' ? 'desc' : 'asc'}">
+                <a th:href="@{/events(page=${page.number}, from=${from}, to=${to}, eventType=${eventType}, sort='entityName,' + ${newDir})}"
+                   class="text-white text-decoration-none d-block">
+                    Entity
+                    <span th:if="${sortField == 'entityName'}" th:text="${sortDir == 'asc' ? '↑' : '↓'}"></span>
+                </a>
+            </th>
+
+            <th th:with="newDir=${sortField == 'author' && sortDir == 'asc' ? 'desc' : 'asc'}">
+                <a th:href="@{/events(page=${page.number}, from=${from}, to=${to}, eventType=${eventType}, sort='author,' + ${newDir})}"
+                   class="text-white text-decoration-none d-block">
+                    Author
+                    <span th:if="${sortField == 'author'}" th:text="${sortDir == 'asc' ? '↑' : '↓'}"></span>
+                </a>
+            </th>
+
             <th>Target</th>
             <th>Changes</th>
             <th>Actions</th>
@@ -97,10 +129,10 @@
                     <button type="button" class="btn btn-sm btn-outline-info"
                             data-bs-toggle="modal"
                             th:data-bs-target="'#changesModal-' + ${log.id}">
-                        👁 View Diff
+                        👁 Diff
                     </button>
                 </div>
-                <span th:if="${log.changeDetails == null or log.changeDetails.isEmpty()}" class="text-muted small">No details</span>
+                <span th:if="${log.changeDetails == null or log.changeDetails.isEmpty()}" class="text-muted small">-</span>
             </td>
 
             <td>
@@ -112,24 +144,26 @@
                 </form>
             </td>
         </tr>
+        <tr th:if="${page.empty}">
+            <td colspan="7" class="text-center text-muted">No logs found matching criteria.</td>
+        </tr>
         </tbody>
     </table>
 
     <nav th:if="${page.totalPages > 1}">
-        <ul class="pagination">
+        <ul class="pagination justify-content-center">
             <li class="page-item" th:classappend="${page.first} ? 'disabled'">
                 <a class="page-link"
-                   th:href="@{/events(page=${page.number - 1}, size=${page.size}, from=${from}, to=${to})}">Previous</a>
+                   th:href="@{/events(page=${page.number - 1}, size=${page.size}, from=${from}, to=${to}, eventType=${eventType}, sort=${sortField + ',' + sortDir})}">Previous</a>
             </li>
-            <li class="page-item" th:each="i : ${#numbers.sequence(0, page.totalPages - 1)}"
-                th:classappend="${i == page.number} ? 'active'">
-                <a class="page-link"
-                   th:href="@{/events(page=${i}, size=${page.size}, from=${from}, to=${to})}"
-                   th:text="${i + 1}"></a>
+
+            <li class="page-item disabled">
+                <span class="page-link" th:text="${'Page ' + (page.number + 1) + ' of ' + page.totalPages}"></span>
             </li>
+
             <li class="page-item" th:classappend="${page.last} ? 'disabled'">
                 <a class="page-link"
-                   th:href="@{/events(page=${page.number + 1}, size=${page.size}, from=${from}, to=${to})}">Next</a>
+                   th:href="@{/events(page=${page.number + 1}, size=${page.size}, from=${from}, to=${to}, eventType=${eventType}, sort=${sortField + ',' + sortDir})}">Next</a>
             </li>
         </ul>
     </nav>
@@ -140,9 +174,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">
-                        Changes: <span th:text="${log.targetName != null ? log.targetName : log.entityName}"></span>
-                    </h5>
+                    <h5 class="modal-title">Changes</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">

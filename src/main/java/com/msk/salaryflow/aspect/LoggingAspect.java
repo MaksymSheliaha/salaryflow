@@ -1,10 +1,7 @@
 package com.msk.salaryflow.aspect;
 
 import com.msk.salaryflow.aspect.annotation.LogEvent;
-import com.msk.salaryflow.entity.Absence;
-import com.msk.salaryflow.entity.Department;
-import com.msk.salaryflow.entity.Employee;
-import com.msk.salaryflow.entity.EventLog;
+import com.msk.salaryflow.entity.*; // Імпортуємо всі сутності (User, Role і т.д.)
 import com.msk.salaryflow.repository.EventLogRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Id;
@@ -18,10 +15,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.scheduling.annotation.Async;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Aspect
 @Component
@@ -36,7 +31,6 @@ public class LoggingAspect {
         String action = logEvent.action();
         Object[] args = joinPoint.getArgs();
 
-        // 1. Пошук старої версії
         Object oldEntity = null;
         if (action.startsWith("UPDATE") && args.length > 0) {
             try {
@@ -53,10 +47,8 @@ public class LoggingAspect {
             }
         }
 
-        // 2. Виконання методу
         Object result = joinPoint.proceed();
 
-        // 3. Обробка результату
         try {
             String currentUser = getCurrentUsername();
             String entityName = "Unknown";
@@ -64,6 +56,9 @@ public class LoggingAspect {
             String targetName = null;
             Map<String, String> changes = null;
 
+            // Логіка визначення targetEntity:
+            // 1. Якщо метод повернув об'єкт (наприклад deleteById тепер повертає User) - беремо його.
+            // 2. Якщо метод void, беремо перший аргумент.
             Object targetEntity = (result != null) ? result : (args.length > 0 ? args[0] : null);
 
             if (targetEntity != null) {
@@ -71,7 +66,6 @@ public class LoggingAspect {
                 UUID id = getIdFromEntity(targetEntity);
                 targetId = (id != null) ? id.toString() : null;
 
-                // Отримуємо гарне ім'я
                 targetName = getNiceName(targetEntity);
 
                 if (action.startsWith("UPDATE") && oldEntity != null) {
@@ -102,8 +96,6 @@ public class LoggingAspect {
         }
     }
 
-    // --- Допоміжні методи ---
-
     private UUID getIdFromEntity(Object entity) {
         try {
             for (Field field : entity.getClass().getDeclaredFields()) {
@@ -133,9 +125,10 @@ public class LoggingAspect {
                 field.setAccessible(true);
                 String fieldName = field.getName();
 
-                if (fieldName.equals("roles") || fieldName.equals("password")
+                // Ігноруємо пароль і технічні поля, але ROLES залишаємо
+                if (fieldName.equals("password")
                         || fieldName.equals("employee") || fieldName.equals("department")
-                        || java.util.Collection.class.isAssignableFrom(field.getType())) {
+                        || fieldName.equals("authorities")) { // authorities ігноруємо, roles беремо
                     continue;
                 }
 
@@ -144,12 +137,29 @@ public class LoggingAspect {
 
                 if (oldVal == null && newVal == null) continue;
 
+                // Спеціальна обробка для Ролей (Set<Role>)
+                if (fieldName.equals("roles")) {
+                    String oldRoles = rolesToString(oldVal);
+                    String newRoles = rolesToString(newVal);
+                    if (!oldRoles.equals(newRoles)) {
+                        diff.put("roles", oldRoles + " -> " + newRoles);
+                    }
+                    continue;
+                }
+
+                // Стандартне порівняння
                 if (!Objects.equals(oldVal, newVal)) {
                     String oldS = (oldVal != null) ? oldVal.toString() : "null";
                     String newS = (newVal != null) ? newVal.toString() : "null";
 
                     if (oldS.contains("T00:00")) oldS = oldS.split("T")[0];
                     if (newS.contains("T00:00")) newS = newS.split("T")[0];
+
+                    // Для красивого виводу enabled
+                    if (fieldName.equals("enabled")) {
+                        if(oldS.equals("true")) oldS = "Active"; else oldS = "Banned";
+                        if(newS.equals("true")) newS = "Active"; else newS = "Banned";
+                    }
 
                     diff.put(fieldName, oldS + " -> " + newS);
                 }
@@ -160,26 +170,44 @@ public class LoggingAspect {
         return diff;
     }
 
-    // --- ОСНОВНА ЗМІНА ТУТ ---
+    // Допоміжний метод для перетворення ролей у рядок "[ADMIN, MANAGER]"
+    private String rolesToString(Object roleCollection) {
+        if (roleCollection instanceof Collection<?>) {
+            return ((Collection<?>) roleCollection).stream()
+                    .map(obj -> {
+                        if (obj instanceof Role) return ((Role) obj).getName();
+                        return obj.toString();
+                    })
+                    .sorted()
+                    .collect(Collectors.joining(", ", "[", "]"));
+        }
+        return "[]";
+    }
+
     private String getNiceName(Object obj) {
         try {
-            // 1. Для працівника - все просто
             if (obj instanceof Employee) {
                 Employee e = (Employee) obj;
                 return e.getFirstName() + " " + e.getLastName();
             }
 
-            // 2. Для відсутності - ТУТ БУЛА ПРОБЛЕМА
+            // 2. User -> Username + Status
+            if (obj instanceof User) {
+                User u = (User) obj;
+                String status = u.isEnabled() ? "Active" : "Banned";
+                return u.getUsername() + " (" + status + ")";
+            }
+
+            if (obj instanceof Department) {
+                return ((Department) obj).getName();
+            }
+
             if (obj instanceof Absence) {
                 Absence a = (Absence) obj;
                 String empName = "Unknown";
-
-                // Спершу пробуємо взяти з об'єкта
                 if (a.getEmployee() != null && a.getEmployee().getFirstName() != null) {
                     empName = a.getEmployee().getFirstName() + " " + a.getEmployee().getLastName();
-                }
-                // Якщо там пусто (null), але є ID - шукаємо в базі через EntityManager
-                else if (a.getEmployeeId() != null) {
+                } else if (a.getEmployeeId() != null) {
                     try {
                         Employee e = entityManager.find(Employee.class, a.getEmployeeId());
                         if (e != null) {
@@ -191,19 +219,13 @@ public class LoggingAspect {
                         empName = "Employee#" + a.getEmployeeId();
                     }
                 }
-
                 return empName + " (" + a.getType() + ")";
             }
 
-            // 3. Для департаменту
-            if (obj instanceof Department) {
-                return ((Department) obj).getName();
-            }
-
-            // 4. Фолбек
             Field nameField = null;
             try { nameField = obj.getClass().getDeclaredField("name"); } catch (NoSuchFieldException e) {
                 try { nameField = obj.getClass().getDeclaredField("firstName"); } catch (NoSuchFieldException ignored) {}
+                try { nameField = obj.getClass().getDeclaredField("username"); } catch (NoSuchFieldException ignored) {}
             }
 
             if (nameField != null) {
