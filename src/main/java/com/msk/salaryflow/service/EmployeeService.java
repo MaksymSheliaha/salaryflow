@@ -2,17 +2,25 @@ package com.msk.salaryflow.service;
 
 import com.msk.salaryflow.aspect.annotation.LogEvent;
 import com.msk.salaryflow.entity.Employee;
+import com.msk.salaryflow.entity.Position;
+import com.msk.salaryflow.model.RestResponsePage;
 import com.msk.salaryflow.repository.EmployeeRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -20,66 +28,99 @@ public class EmployeeService {
 
     private final EmployeeRepository employeeRepository;
 
-    @CacheEvict(value = {"employee", "employee_pages"}, allEntries = true)
+    @Cacheable(value = "employee_pages", key = "{#searchTerm, #departmentId, #position, #pageable.pageNumber, #pageable.pageSize, #pageable.sort.toString()}")
+    public Page<Employee> findAll(String searchTerm, UUID departmentId, Position position, Pageable pageable) {
+
+        // --- РОЗУМНЕ СОРТУВАННЯ ---
+        // Якщо сортуємо по Імені -> додаємо Прізвище другим полем
+        // Якщо сортуємо по Прізвищу -> додаємо Ім'я другим полем
+        Pageable sortedPageable = refineSorting(pageable);
+
+        Specification<Employee> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (StringUtils.hasText(searchTerm)) {
+                String likePattern = "%" + searchTerm.toLowerCase() + "%";
+                Predicate firstName = cb.like(cb.lower(root.get("firstName")), likePattern);
+                Predicate lastName = cb.like(cb.lower(root.get("lastName")), likePattern);
+                Predicate email = cb.like(cb.lower(root.get("email")), likePattern);
+                predicates.add(cb.or(firstName, lastName, email));
+            }
+
+            if (departmentId != null) {
+                predicates.add(cb.equal(root.get("department").get("id"), departmentId));
+            }
+
+            if (position != null) {
+                predicates.add(cb.equal(root.get("position"), position));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<Employee> page = employeeRepository.findAll(spec, sortedPageable);
+        return new RestResponsePage<>(page.getContent(), page.getPageable(), page.getTotalElements());
+    }
+
+    private Pageable refineSorting(Pageable pageable) {
+        Sort sort = pageable.getSort();
+        if (sort.isUnsorted()) return pageable;
+
+        Sort.Order order = sort.stream().findFirst().orElse(null);
+        if (order == null) return pageable;
+
+        String property = order.getProperty();
+        Sort.Direction direction = order.getDirection();
+
+        Sort newSort = sort;
+
+        if ("firstName".equals(property)) {
+            // Ім'я -> Прізвище
+            newSort = Sort.by(direction, "firstName").and(Sort.by(direction, "lastName"));
+        } else if ("lastName".equals(property)) {
+            // Прізвище -> Ім'я
+            newSort = Sort.by(direction, "lastName").and(Sort.by(direction, "firstName"));
+        } else if ("department".equals(property)) {
+            // Сортування по назві департаменту
+            newSort = Sort.by(direction, "department.name");
+        } else if ("hireDate".equals(property)) {
+            // Дата найму -> Прізвище
+            newSort = Sort.by(direction, "hireDate").and(Sort.by(Sort.Direction.ASC, "lastName"));
+        } else if ("salary".equals(property)) {
+            // Зарплата -> Прізвище
+            newSort = Sort.by(direction, "salary").and(Sort.by(Sort.Direction.ASC, "lastName"));
+        }
+
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), newSort);
+    }
+
+    @Caching(evict = {
+            @CacheEvict(value = "employee_pages", allEntries = true),
+            @CacheEvict(value = "employee", key = "#employee.id")
+    })
     @LogEvent(action = "UPDATE_EMPLOYEE")
     public Employee update(Employee employee) {
         return employeeRepository.save(employee);
     }
 
-    @CacheEvict(value = {"employee", "employee_pages"}, allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(value = "employee_pages", allEntries = true)
+    })
     @LogEvent(action = "CREATE_EMPLOYEE")
     public Employee save(Employee employee) {
         return employeeRepository.save(employee);
     }
 
-    public Page<Employee> findAll(Pageable pageable){
-        return employeeRepository.findAll(pageable);
-    }
-
-    // Переделанный метод поиска: по примеру department/absence — сначала получаем все подходящие id,
-    // затем формируем страницу из подсписка id, загружаем сущности по этим id и возвращаем PageImpl,
-    // сохраняя порядок согласно списку id.
-    public Page<Employee> search(String term, Pageable pageable) {
-        if (term == null || term.isBlank()) {
-            return findAll(pageable);
-        }
-
-        List<UUID> ids = employeeRepository.findIdsBySearchTerm(term.trim());
-        if (ids == null || ids.isEmpty()) {
-            return Page.empty(pageable);
-        }
-
-        // paging over ids (как в Department): берем подсписок id для текущей страницы
-        int total = ids.size();
-        int page = pageable.getPageNumber();
-        int size = pageable.getPageSize();
-        int start = page * size;
-        if (start >= total) {
-            return Page.empty(pageable);
-        }
-        int end = Math.min(start + size, total);
-        List<UUID> pageIds = ids.subList(start, end);
-
-        // загрузить сущности по pageIds и упорядочить в соответствии с порядком в pageIds
-        List<Employee> found = employeeRepository.findAllByIdIn(pageIds);
-        Map<UUID, Employee> map = new HashMap<>();
-        for (Employee e : found) {
-            map.put(e.getId(), e);
-        }
-        List<Employee> ordered = new ArrayList<>();
-        for (UUID id : pageIds) {
-            Employee e = map.get(id);
-            if (e != null) ordered.add(e);
-        }
-
-        return new PageImpl<>(ordered, pageable, total);
-    }
-
-    @CacheEvict(value = {"employee", "employee_pages"}, allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(value = "employee_pages", allEntries = true),
+            @CacheEvict(value = "employee", key = "#id")
+    })
     @LogEvent(action = "DELETE_EMPLOYEE")
     public Employee deleteById(UUID id){
         Employee toDelete = employeeRepository.findById(id).orElse(null);
-        employeeRepository.deleteById(id);
+        if (toDelete != null) {
+            employeeRepository.deleteById(id);
+        }
         return toDelete;
     }
 
