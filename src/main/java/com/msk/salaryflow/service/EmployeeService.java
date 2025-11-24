@@ -18,6 +18,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -28,17 +30,21 @@ public class EmployeeService {
 
     private final EmployeeRepository employeeRepository;
 
-    @Cacheable(value = "employee_pages", key = "{#searchTerm, #departmentId, #position, #pageable.pageNumber, #pageable.pageSize, #pageable.sort.toString()}")
-    public Page<Employee> findAll(String searchTerm, UUID departmentId, Position position, Pageable pageable) {
+    // КОНСТАНТА ПЕНСІЙНОГО ВІКУ
+    private static final int PENSION_AGE = 60;
 
-        // --- РОЗУМНЕ СОРТУВАННЯ ---
-        // Якщо сортуємо по Імені -> додаємо Прізвище другим полем
-        // Якщо сортуємо по Прізвищу -> додаємо Ім'я другим полем
+    // Оновлена сигнатура методу: додали pensioners, minSalary, maxSalary
+    @Cacheable(value = "employee_pages", key = "{#searchTerm, #departmentId, #position, #pensioners, #minSalary, #maxSalary, #pageable.pageNumber, #pageable.pageSize, #pageable.sort.toString()}")
+    public Page<Employee> findAll(String searchTerm, UUID departmentId, Position position,
+                                  Boolean pensioners, Double minSalary, Double maxSalary,
+                                  Pageable pageable) {
+
         Pageable sortedPageable = refineSorting(pageable);
 
         Specification<Employee> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+            // 1. Пошук по тексту
             if (StringUtils.hasText(searchTerm)) {
                 String likePattern = "%" + searchTerm.toLowerCase() + "%";
                 Predicate firstName = cb.like(cb.lower(root.get("firstName")), likePattern);
@@ -47,12 +53,32 @@ public class EmployeeService {
                 predicates.add(cb.or(firstName, lastName, email));
             }
 
+            // 2. Департамент
             if (departmentId != null) {
                 predicates.add(cb.equal(root.get("department").get("id"), departmentId));
             }
 
+            // 3. Посада
             if (position != null) {
                 predicates.add(cb.equal(root.get("position"), position));
+            }
+
+            // 4. Фільтр пенсіонерів (вік > PENSION_AGE)
+            if (Boolean.TRUE.equals(pensioners)) {
+                // Дата відсікання: Сьогодні мінус 60 років
+                LocalDate cutoffDate = LocalDate.now().minusYears(PENSION_AGE);
+                // День народження має бути РАНІШЕ за дату відсікання
+                predicates.add(cb.lessThanOrEqualTo(root.get("birthday"), cutoffDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+            }
+
+            // 5. Мінімальна зарплата
+            if (minSalary != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("salary"), minSalary));
+            }
+
+            // 6. Максимальна зарплата
+            if (maxSalary != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("salary"), maxSalary));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -75,25 +101,24 @@ public class EmployeeService {
         Sort newSort = sort;
 
         if ("firstName".equals(property)) {
-            // Ім'я -> Прізвище
             newSort = Sort.by(direction, "firstName").and(Sort.by(direction, "lastName"));
         } else if ("lastName".equals(property)) {
-            // Прізвище -> Ім'я
             newSort = Sort.by(direction, "lastName").and(Sort.by(direction, "firstName"));
         } else if ("department".equals(property)) {
-            // Сортування по назві департаменту
             newSort = Sort.by(direction, "department.name");
         } else if ("hireDate".equals(property)) {
-            // Дата найму -> Прізвище
             newSort = Sort.by(direction, "hireDate").and(Sort.by(Sort.Direction.ASC, "lastName"));
         } else if ("salary".equals(property)) {
-            // Зарплата -> Прізвище
             newSort = Sort.by(direction, "salary").and(Sort.by(Sort.Direction.ASC, "lastName"));
+        } else if ("birthday".equals(property)) { // <--- НОВИЙ БЛОК
+            newSort = Sort.by(direction, "birthday").and(Sort.by(Sort.Direction.ASC, "lastName"));
         }
+
 
         return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), newSort);
     }
 
+    // ... Решта методів (update, save, deleteById, findById) залишаються без змін ...
     @Caching(evict = {
             @CacheEvict(value = "employee_pages", allEntries = true),
             @CacheEvict(value = "employee", key = "#employee.id")

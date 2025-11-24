@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <title>Employee Directory</title>
     <style>
         .table-column-hidden {
@@ -19,43 +19,78 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3>Employee Directory</h3>
-        <a th:href="@{/employees/add}" class="btn btn-primary btn-sm">
-            Add Employee
-        </a>
+
+        <div th:unless="${param.mode != null and param.mode[0] == 'select'}">
+            <a th:href="@{/employees/add}" class="btn btn-primary btn-sm">
+                Add Employee
+            </a>
+        </div>
+
+        <div th:if="${param.mode != null and param.mode[0] == 'select'}" class="alert alert-info py-1 px-3 mb-0">
+            <strong>Select Mode:</strong> Choose an employee for absence record.
+        </div>
     </div>
 
-    <form th:action="@{/employees}" method="get" class="row g-2 mb-3 bg-light p-2 rounded border">
+    <form th:action="@{/employees}" method="get" class="mb-3 bg-light p-3 rounded border">
         <input type="hidden" name="size" th:value="${page.size}">
         <input type="hidden" name="sort" th:if="${param.sort != null}" th:value="${param.sort[0]}">
 
-        <div class="col-md-3">
-            <input type="text" name="q" class="form-control form-control-sm"
-                   placeholder="Search name or email..." th:value="${currentSearch}">
+        <input type="hidden" name="mode" th:if="${param.mode != null}" th:value="${param.mode[0]}">
+
+        <div class="row g-2">
+            <div class="col-md-3">
+                <label class="form-label small mb-0 fw-bold">Search</label>
+                <input type="text" name="q" class="form-control form-control-sm"
+                       placeholder="Name or email..." th:value="${currentSearch}">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label small mb-0 fw-bold">Department</label>
+                <select name="deptId" class="form-select form-select-sm">
+                    <option value="">All Departments</option>
+                    <option th:each="dept : ${departmentList}"
+                            th:value="${dept.id}"
+                            th:text="${dept.name}"
+                            th:selected="${dept.id == currentDeptId}"></option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label small mb-0 fw-bold">Position</label>
+                <select name="pos" class="form-select form-select-sm">
+                    <option value="">All Positions</option>
+                    <option th:each="pos : ${positionList}"
+                            th:value="${pos}"
+                            th:text="${pos}"
+                            th:selected="${pos == currentPos}"></option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label small mb-0 fw-bold">Salary Range</label>
+                <div class="input-group input-group-sm">
+                    <input type="number" name="minSalary" class="form-control" placeholder="Min" th:value="${minSalary}">
+                    <span class="input-group-text">-</span>
+                    <input type="number" name="maxSalary" class="form-control" placeholder="Max" th:value="${maxSalary}">
+                </div>
+            </div>
         </div>
 
-        <div class="col-md-3">
-            <select name="deptId" class="form-select form-select-sm">
-                <option value="">All Departments</option>
-                <option th:each="dept : ${departmentList}"
-                        th:value="${dept.id}"
-                        th:text="${dept.name}"
-                        th:selected="${dept.id == currentDeptId}"></option>
-            </select>
-        </div>
+        <div class="row g-2 mt-1 align-items-center">
+            <div class="col-md-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="pensionCheck" name="pensioners" value="true"
+                           th:checked="${pensioners}">
+                    <label class="form-check-label small" for="pensionCheck">
+                        Show pensioners only (> 60 y.o.)
+                    </label>
+                </div>
+            </div>
 
-        <div class="col-md-3">
-            <select name="pos" class="form-select form-select-sm">
-                <option value="">All Positions</option>
-                <option th:each="pos : ${positionList}"
-                        th:value="${pos}"
-                        th:text="${pos}"
-                        th:selected="${pos == currentPos}"></option>
-            </select>
-        </div>
-
-        <div class="col-md-3 d-flex gap-2">
-            <button type="submit" class="btn btn-sm btn-primary w-50">Filter</button>
-            <a th:href="@{/employees}" class="btn btn-sm btn-outline-secondary w-50">Clear</a>
+            <div class="col-md-9 text-end">
+                <button type="submit" class="btn btn-sm btn-primary px-4">Apply Filters</button>
+                <a th:href="@{/employees(mode=${param.mode != null ? param.mode[0] : null})}" class="btn btn-sm btn-outline-secondary">Reset</a>
+            </div>
         </div>
     </form>
 
@@ -67,7 +102,7 @@
             <ul class="dropdown-menu p-2">
                 <li class="form-check">
                     <input class="form-check-input js-column-toggle" type="checkbox" value="lastName" id="c1" checked disabled>
-                    <label class="form-check-label" for="c1">Last Name (Always)</label>
+                    <label class="form-check-label" for="c1">Last Name</label>
                 </li>
                 <li class="form-check">
                     <input class="form-check-input js-column-toggle" type="checkbox" value="firstName" id="c2" checked>
@@ -93,6 +128,14 @@
                     <input class="form-check-input js-column-toggle" type="checkbox" value="hireDate" id="c7" checked>
                     <label class="form-check-label" for="c7">Hire Date</label>
                 </li>
+                <li class="form-check">
+                    <input class="form-check-input js-column-toggle" type="checkbox" value="birthday" id="c8" checked>
+                    <label class="form-check-label" for="c8">Birthday</label>
+                </li>
+                <li class="form-check">
+                    <input class="form-check-input js-column-toggle" type="checkbox" value="experience" id="c9" checked>
+                    <label class="form-check-label" for="c9">Experience</label>
+                </li>
             </ul>
         </div>
     </div>
@@ -105,7 +148,7 @@
                          currSort=${param.sort != null ? param.sort[0] : ''},
                          isAsc=${currSort.contains(sortCol + ',asc')},
                          newDir=${isAsc ? 'desc' : 'asc'}">
-                <a th:href="@{/employees(page=${page.number}, size=${page.size}, q=${currentSearch}, deptId=${currentDeptId}, pos=${currentPos}, sort=${sortCol + ',' + newDir})}"
+                <a th:href="@{/employees(page=${page.number}, size=${page.size}, q=${currentSearch}, deptId=${currentDeptId}, pos=${currentPos}, pensioners=${pensioners}, minSalary=${minSalary}, maxSalary=${maxSalary}, sort=${sortCol + ',' + newDir}, mode=${param.mode != null ? param.mode[0] : null})}"
                    class="text-white text-decoration-none d-block">
                     Last Name <span th:if="${currSort.contains(sortCol)}" th:text="${isAsc ? '↑' : '↓'}"></span>
                 </a>
@@ -116,40 +159,21 @@
                          currSort=${param.sort != null ? param.sort[0] : ''},
                          isAsc=${currSort.contains(sortCol + ',asc')},
                          newDir=${isAsc ? 'desc' : 'asc'}">
-                <a th:href="@{/employees(page=${page.number}, size=${page.size}, q=${currentSearch}, deptId=${currentDeptId}, pos=${currentPos}, sort=${sortCol + ',' + newDir})}"
+                <a th:href="@{/employees(page=${page.number}, size=${page.size}, q=${currentSearch}, deptId=${currentDeptId}, pos=${currentPos}, pensioners=${pensioners}, minSalary=${minSalary}, maxSalary=${maxSalary}, sort=${sortCol + ',' + newDir}, mode=${param.mode != null ? param.mode[0] : null})}"
                    class="text-white text-decoration-none d-block">
                     First Name <span th:if="${currSort.contains(sortCol)}" th:text="${isAsc ? '↑' : '↓'}"></span>
                 </a>
             </th>
 
-            <th data-column-id="email" class="js-column-cell"
-                th:with="sortCol='email',
-                         currSort=${param.sort != null ? param.sort[0] : ''},
-                         isAsc=${currSort.contains(sortCol + ',asc')},
-                         newDir=${isAsc ? 'desc' : 'asc'}">
-                <a th:href="@{/employees(page=${page.number}, size=${page.size}, q=${currentSearch}, deptId=${currentDeptId}, pos=${currentPos}, sort=${sortCol + ',' + newDir})}"
-                   class="text-white text-decoration-none d-block">
-                    Email <span th:if="${currSort.contains(sortCol)}" th:text="${isAsc ? '↑' : '↓'}"></span>
-                </a>
-            </th>
-
-            <th data-column-id="position" class="js-column-cell"
-                th:with="sortCol='position',
-                         currSort=${param.sort != null ? param.sort[0] : ''},
-                         isAsc=${currSort.contains(sortCol + ',asc')},
-                         newDir=${isAsc ? 'desc' : 'asc'}">
-                <a th:href="@{/employees(page=${page.number}, size=${page.size}, q=${currentSearch}, deptId=${currentDeptId}, pos=${currentPos}, sort=${sortCol + ',' + newDir})}"
-                   class="text-white text-decoration-none d-block">
-                    Position <span th:if="${currSort.contains(sortCol)}" th:text="${isAsc ? '↑' : '↓'}"></span>
-                </a>
-            </th>
+            <th data-column-id="email" class="js-column-cell">Email</th>
+            <th data-column-id="position" class="js-column-cell">Position</th>
 
             <th data-column-id="salary" class="js-column-cell"
                 th:with="sortCol='salary',
                          currSort=${param.sort != null ? param.sort[0] : ''},
                          isAsc=${currSort.contains(sortCol + ',asc')},
                          newDir=${isAsc ? 'desc' : 'asc'}">
-                <a th:href="@{/employees(page=${page.number}, size=${page.size}, q=${currentSearch}, deptId=${currentDeptId}, pos=${currentPos}, sort=${sortCol + ',' + newDir})}"
+                <a th:href="@{/employees(page=${page.number}, size=${page.size}, q=${currentSearch}, deptId=${currentDeptId}, pos=${currentPos}, pensioners=${pensioners}, minSalary=${minSalary}, maxSalary=${maxSalary}, sort=${sortCol + ',' + newDir}, mode=${param.mode != null ? param.mode[0] : null})}"
                    class="text-white text-decoration-none d-block">
                     Salary <span th:if="${currSort.contains(sortCol)}" th:text="${isAsc ? '↑' : '↓'}"></span>
                 </a>
@@ -160,7 +184,7 @@
                          currSort=${param.sort != null ? param.sort[0] : ''},
                          isAsc=${currSort.contains(sortCol + ',asc')},
                          newDir=${isAsc ? 'desc' : 'asc'}">
-                <a th:href="@{/employees(page=${page.number}, size=${page.size}, q=${currentSearch}, deptId=${currentDeptId}, pos=${currentPos}, sort=${sortCol + ',' + newDir})}"
+                <a th:href="@{/employees(page=${page.number}, size=${page.size}, q=${currentSearch}, deptId=${currentDeptId}, pos=${currentPos}, pensioners=${pensioners}, minSalary=${minSalary}, maxSalary=${maxSalary}, sort=${sortCol + ',' + newDir}, mode=${param.mode != null ? param.mode[0] : null})}"
                    class="text-white text-decoration-none d-block">
                     Department <span th:if="${currSort.contains(sortCol)}" th:text="${isAsc ? '↑' : '↓'}"></span>
                 </a>
@@ -171,11 +195,24 @@
                          currSort=${param.sort != null ? param.sort[0] : ''},
                          isAsc=${currSort.contains(sortCol + ',asc')},
                          newDir=${isAsc ? 'desc' : 'asc'}">
-                <a th:href="@{/employees(page=${page.number}, size=${page.size}, q=${currentSearch}, deptId=${currentDeptId}, pos=${currentPos}, sort=${sortCol + ',' + newDir})}"
+                <a th:href="@{/employees(page=${page.number}, size=${page.size}, q=${currentSearch}, deptId=${currentDeptId}, pos=${currentPos}, pensioners=${pensioners}, minSalary=${minSalary}, maxSalary=${maxSalary}, sort=${sortCol + ',' + newDir}, mode=${param.mode != null ? param.mode[0] : null})}"
                    class="text-white text-decoration-none d-block">
                     Hire Date <span th:if="${currSort.contains(sortCol)}" th:text="${isAsc ? '↑' : '↓'}"></span>
                 </a>
             </th>
+
+            <th data-column-id="birthday" class="js-column-cell"
+                th:with="sortCol='birthday',
+                         currSort=${param.sort != null ? param.sort[0] : ''},
+                         isAsc=${currSort.contains(sortCol + ',asc')},
+                         newDir=${isAsc ? 'desc' : 'asc'}">
+                <a th:href="@{/employees(page=${page.number}, size=${page.size}, q=${currentSearch}, deptId=${currentDeptId}, pos=${currentPos}, pensioners=${pensioners}, minSalary=${minSalary}, maxSalary=${maxSalary}, sort=${sortCol + ',' + newDir}, mode=${param.mode != null ? param.mode[0] : null})}"
+                   class="text-white text-decoration-none d-block">
+                    Birthday <span th:if="${currSort.contains(sortCol)}" th:text="${isAsc ? '↑' : '↓'}"></span>
+                </a>
+            </th>
+
+            <th data-column-id="experience" class="js-column-cell">Experience</th>
 
             <th>Actions</th>
         </tr>
@@ -199,10 +236,26 @@
             <td data-column-id="hireDate" class="js-column-cell"
                 th:text="${#temporals.format(employee.hireDate, 'dd.MM.yyyy')}"></td>
 
+            <td data-column-id="birthday" class="js-column-cell">
+                <span th:if="${employee.birthday != null}"
+                      th:text="${#temporals.format(employee.birthday, 'dd.MM.yyyy')}"></span>
+                <span th:unless="${employee.birthday != null}" class="text-muted">-</span>
+            </td>
+
+            <td data-column-id="experience" class="js-column-cell">
+                <span th:if="${employee.hireDate != null}"
+                      th:with="years=${T(java.time.Period).between(employee.hireDate.atZone(T(java.time.ZoneId).systemDefault()).toLocalDate(), T(java.time.LocalDate).now()).getYears()}">
+                    <span th:text="${years} + ' years'"></span>
+                </span>
+                <span th:unless="${employee.hireDate != null}" class="text-muted">-</span>
+            </td>
+
             <td class="d-flex gap-2">
                 <div th:if="${param.mode != null and param.mode[0] == 'select'}">
                     <a th:href="@{/absences/add(employeeId=${employee.id})}"
-                       class="btn btn-success btn-sm">Select</a>
+                       class="btn btn-success btn-sm fw-bold">
+                        Select
+                    </a>
                 </div>
 
                 <div th:unless="${param.mode != null and param.mode[0] == 'select'}" class="d-flex gap-2">
@@ -211,7 +264,7 @@
 
                     <a th:href="@{/employees/delete(employeeId=${employee.id})}"
                        class="btn btn-danger btn-sm"
-                       onclick="return confirm('Are you sure you want to delete this employee?')">Delete</a>
+                       onclick="return confirm('Delete this employee?')">Delete</a>
 
                     <a th:href="@{/employees/{id}(id=${employee.id})}"
                        class="btn btn-outline-primary btn-sm">View</a>
@@ -219,7 +272,7 @@
             </td>
         </tr>
         <tr th:if="${page.empty}">
-            <td colspan="8" class="text-center text-muted">No employees found.</td>
+            <td colspan="10" class="text-center text-muted">No employees found.</td>
         </tr>
         </tbody>
     </table>
@@ -227,11 +280,11 @@
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div class="btn-group" role="group">
             <a th:if="${page.hasPrevious()}" class="btn btn-outline-secondary btn-sm"
-               th:href="@{/employees(page=${page.number - 1}, size=${page.size}, q=${currentSearch}, deptId=${currentDeptId}, pos=${currentPos}, sort=${param.sort != null ? param.sort[0] : ''})}">Previous</a>
+               th:href="@{/employees(page=${page.number - 1}, size=${page.size}, q=${currentSearch}, deptId=${currentDeptId}, pos=${currentPos}, pensioners=${pensioners}, minSalary=${minSalary}, maxSalary=${maxSalary}, sort=${param.sort != null ? param.sort[0] : ''}, mode=${param.mode != null ? param.mode[0] : null})}">Previous</a>
             <span th:unless="${page.hasPrevious()}" class="btn btn-outline-secondary btn-sm disabled">Previous</span>
 
             <a th:if="${page.hasNext()}" class="btn btn-outline-secondary btn-sm"
-               th:href="@{/employees(page=${page.number + 1}, size=${page.size}, q=${currentSearch}, deptId=${currentDeptId}, pos=${currentPos}, sort=${param.sort != null ? param.sort[0] : ''})}">Next</a>
+               th:href="@{/employees(page=${page.number + 1}, size=${page.size}, q=${currentSearch}, deptId=${currentDeptId}, pos=${currentPos}, pensioners=${pensioners}, minSalary=${minSalary}, maxSalary=${maxSalary}, sort=${param.sort != null ? param.sort[0] : ''}, mode=${param.mode != null ? param.mode[0] : null})}">Next</a>
             <span th:unless="${page.hasNext()}" class="btn btn-outline-secondary btn-sm disabled">Next</span>
         </div>
 
@@ -244,7 +297,11 @@
             <input type="hidden" name="q" th:value="${currentSearch}">
             <input type="hidden" name="deptId" th:value="${currentDeptId}">
             <input type="hidden" name="pos" th:value="${currentPos}">
+            <input type="hidden" name="pensioners" th:value="${pensioners}">
+            <input type="hidden" name="minSalary" th:value="${minSalary}">
+            <input type="hidden" name="maxSalary" th:value="${maxSalary}">
             <input type="hidden" name="sort" th:if="${param.sort != null}" th:value="${param.sort[0]}">
+            <input type="hidden" name="mode" th:if="${param.mode != null}" th:value="${param.mode[0]}">
 
             <label class="mb-0 small">Rows:</label>
             <select name="size" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
@@ -256,8 +313,7 @@
     </div>
 
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     (function () {
         const STORAGE_KEY = 'employeeTableCols';
@@ -274,22 +330,19 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // 1. Відновити стан
             const stored = localStorage.getItem(STORAGE_KEY);
             if (stored) {
                 try {
                     const checkedValues = JSON.parse(stored);
                     document.querySelectorAll('.js-column-toggle').forEach(cb => {
-                        if (cb.value !== 'lastName') { // lastName завжди on
+                        if (cb.value !== 'lastName') {
                             cb.checked = checkedValues.includes(cb.value);
                         }
                     });
                 } catch(e) {}
             }
-            // 2. Застосувати
             applyVisibility();
 
-            // 3. Слухати зміни
             document.querySelectorAll('.js-column-toggle').forEach(cb => {
                 cb.addEventListener('change', () => {
                     applyVisibility();

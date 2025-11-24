@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.UUID;
 
+
 @RequestMapping("/employees")
 @Controller
 @RequiredArgsConstructor
@@ -31,14 +32,29 @@ public class EmployeeController {
                                 @RequestParam(value = "q", required = false) String searchTerm,
                                 @RequestParam(value = "deptId", required = false) UUID departmentId,
                                 @RequestParam(value = "pos", required = false) Position position,
+
+                                // НОВІ ПАРАМЕТРИ
+                                @RequestParam(value = "pensioners", required = false) Boolean pensioners,
+                                @RequestParam(value = "minSalary", required = false) Double minSalary,
+                                @RequestParam(value = "maxSalary", required = false) Double maxSalary,
+
                                 @PageableDefault(sort = "lastName", direction = Sort.Direction.ASC, size = 10) Pageable pageable){
 
-        Page<Employee> employees = employeeService.findAll(searchTerm, departmentId, position, pageable);
+        // Передаємо все в сервіс
+        Page<Employee> employees = employeeService.findAll(searchTerm, departmentId, position, pensioners, minSalary, maxSalary, pageable);
 
         model.addAttribute("employees", employees);
+
+        // Зберігаємо стан фільтрів
         model.addAttribute("currentSearch", searchTerm);
         model.addAttribute("currentDeptId", departmentId);
         model.addAttribute("currentPos", position);
+
+        // Повертаємо нові фільтри в HTML
+        model.addAttribute("pensioners", pensioners);
+        model.addAttribute("minSalary", minSalary);
+        model.addAttribute("maxSalary", maxSalary);
+
         model.addAttribute("page", employees);
         model.addAttribute("departmentList", departmentService.findAll(Pageable.unpaged()).getContent());
         model.addAttribute("positionList", Position.values());
@@ -46,23 +62,21 @@ public class EmployeeController {
         return "employees/employee-list";
     }
 
+    // ... Решта методів (save, add, update, delete) без змін ...
     @PostMapping("/save")
     private String save(@ModelAttribute("employee") Employee employee,
                         @RequestParam(value = "birthdayDate", required = false) String birthdayDate,
-                        @RequestParam(value = "hireDateStr", required = false) String hireDateStr){ // Отримуємо рядок
+                        @RequestParam(value = "hireDateStr", required = false) String hireDateStr){
 
-        // Обробка Дня Народження
         if (birthdayDate != null && !birthdayDate.isEmpty()) {
             LocalDate localDate = LocalDate.parse(birthdayDate);
             employee.setBirthday(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
         }
 
-        // Обробка Дати Найму (Hire Date)
         if (hireDateStr != null && !hireDateStr.isEmpty()) {
             LocalDate localDate = LocalDate.parse(hireDateStr);
             employee.setHireDate(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
         } else if (employee.getHireDate() == null) {
-            // Якщо пусто і це створення нового - ставимо сьогодні
             employee.setHireDate(Instant.now());
         }
 
@@ -77,7 +91,6 @@ public class EmployeeController {
     @GetMapping("/add")
     private String showFormForAdd(Model model){
         Employee employee = new Employee();
-        // Встановлюємо дефолтну дату найму (сьогодні)
         employee.setHireDate(Instant.now());
         employee.setSalary(0.0);
 
