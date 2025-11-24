@@ -12,13 +12,6 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3>Department Information</h3>
-        <div class="btn-group" role="group">
-            <a th:href="@{/departments}" class="btn btn-secondary btn-sm">Back to List</a>
-
-            <a th:href="@{/departments/update(departmentId=${department.id})}"
-               class="btn btn-outline-primary btn-sm"
-               sec:authorize="hasAuthority('ROLE_ADMIN')">Edit</a>
-        </div>
     </div>
 
     <div class="card mb-3">
@@ -79,9 +72,11 @@
         </div>
     </div>
 
-    <a th:href="@{/departments}" class="btn btn-secondary mt-2">
-        Back to List
-    </a>
+    <div class="mt-4">
+        <button type="button" class="btn btn-outline-secondary" onclick="history.back()">Back</button>
+        <a class="btn btn-secondary" th:href="@{/departments}">Back to List</a>
+        <a class="btn btn-primary" th:href="@{/departments/update(id=${department.id})}">Edit</a>
+    </div>
 
 </div>
 

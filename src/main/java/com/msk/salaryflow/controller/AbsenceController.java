@@ -79,8 +79,11 @@ public class AbsenceController {
             model.addAttribute("isNew", absence.getId() == null);
             return "absences/absence-form";
         }
-
-        service.save(absence);
+        if(absence.getId()==null){
+            service.save(absence);
+        } else{
+            service.update(absence);
+        }
         return "redirect:/absences";
     }
 

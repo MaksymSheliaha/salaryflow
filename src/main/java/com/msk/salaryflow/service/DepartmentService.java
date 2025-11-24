@@ -66,8 +66,10 @@ public class DepartmentService {
 
     @LogEvent(action = "DELETE_DEPARTMENT")
     @CacheEvict(value = { "department", "department_pages", "departmentsSearch" }, allEntries = true)
-    public void deleteById(UUID id) {
+    public Department deleteById(UUID id) {
+        Department toDelete = departmentRepository.findById(id).orElse(null);
         departmentRepository.deleteById(id);
+        return toDelete;
     }
 
     @Cacheable(value = "department", key = "#id")

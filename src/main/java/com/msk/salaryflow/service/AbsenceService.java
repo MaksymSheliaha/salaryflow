@@ -66,12 +66,23 @@ public class AbsenceService {
     }
 
     @Caching(evict = {
+            @CacheEvict(value = "absence_response", key = "#absence.id"),
+            @CacheEvict(value = "absences_page", allEntries = true)
+    })
+    @LogEvent(action = "UPDATE_ABSENCE")
+    public Absence update(Absence absence) {
+        return absenceRepository.save(absence);
+    }
+
+    @Caching(evict = {
             @CacheEvict(value = "absence_response", key = "#id"),
             @CacheEvict(value = "absences_page", allEntries = true)
     })
     @LogEvent(action = "DELETE_ABSENCE")
-    public void deleteById(UUID id) {
+    public Absence deleteById(UUID id) {
+        Absence deleted = absenceRepository.findById(id).orElse(null);
         absenceRepository.deleteById(id);
+        return deleted;
     }
 
     private Pageable mapSortFields(Pageable pageable) {

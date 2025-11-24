@@ -43,18 +43,16 @@ public class DepartmentController {
         return "departments/department-list";
     }
 
-    // ... решта методів без змін ...
     @PostMapping("/save")
     private String save(@ModelAttribute("department") Department department){
         Department saved;
         if(department.getId()==null){
-            saved = departmentService.update(department);
-        } else{
             saved = departmentService.save(department);
+        } else{
+            saved = departmentService.update(department);
         }
         return "redirect:/departments/"+saved.getId();
     }
-    // ... (весь інший код контролера залишається таким самим)
     @GetMapping("/add")
     private String showFormForAdd(Model model){
         Department department = new Department();
