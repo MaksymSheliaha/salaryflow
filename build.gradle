@@ -43,6 +43,7 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
     implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
     implementation 'org.springframework.boot:spring-boot-starter-aop:3.5.7'
+    testImplementation 'com.h2database:h2'
 }
 
 tasks.named('test') {

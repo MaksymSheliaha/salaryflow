@@ -23,28 +23,30 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) throws Exception {
         createOrUpdateAdmin();
     }
+
     private void createOrUpdateAdmin() {
         String username = "admin";
         if (userRepository.findByUsername(username).isPresent()) {
-            System.out.println(">>> Admin user already exists. Skipping initialization.");
+            // System.out.println(">>> Admin user already exists.");
             return;
         }
         System.out.println(">>> Creating System Admin...");
 
         User admin = new User();
         admin.setUsername(username);
-
-        String rawPassword = "admin123";
-        admin.setPassword(passwordEncoder.encode(rawPassword));
-
+        admin.setPassword(passwordEncoder.encode("admin123"));
         admin.setEnabled(true);
 
         Role adminRole = roleRepository.findByName("ROLE_ADMIN")
-                .orElseThrow(() -> new RuntimeException("Error: Role ROLE_ADMIN is not found."));
+                .orElseGet(() -> {
+                    Role newRole = new Role();
+                    newRole.setName("ROLE_ADMIN");
+                    return roleRepository.save(newRole);
+                });
 
         admin.setRoles(Set.of(adminRole));
 
         userRepository.save(admin);
-        System.out.println(">>> Admin created successfully with default password.");
+        System.out.println(">>> Admin created successfully.");
     }
 }
