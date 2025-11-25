@@ -106,9 +106,21 @@
 
         <div class="mb-3">
             <button type="submit" class="btn btn-success">Save</button>
-            <a th:href="@{/employees}" class="btn btn-secondary">Cancel</a>
+
+            <a href="javascript:void(0);" onclick="goBack()" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
 </div>
+
+<script>
+    function goBack() {
+        const lastUrl = sessionStorage.getItem('lastEmployeeUrl');
+        if (lastUrl) {
+            window.location.href = lastUrl;
+        } else {
+            window.location.href = '/employees';
+        }
+    }
+</script>
 </body>
 </html>
