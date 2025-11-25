@@ -70,6 +70,7 @@ public class EmployeeController {
         return "employees/employee-list";
     }
 
+
     @PostMapping("/save")
     private String save(@Valid @ModelAttribute("employee") Employee employee,
                         BindingResult bindingResult,
@@ -77,15 +78,17 @@ public class EmployeeController {
                         @RequestParam(value = "hireDateStr", required = false) String hireDateStr,
                         Model model){
 
-        // --- 1. ПЕРЕВІРКА EMAIL НА УНІКАЛЬНІСТЬ ---
+        // --- 1. ЛОГІКА ЗА ЗАМОВЧУВАННЯМ ---
+        // Якщо позицію не вибрали -> ставимо NONE
+        if (employee.getPosition() == null) {
+            employee.setPosition(Position.NONE);
+        }
         Optional<Employee> existing = employeeService.findByEmail(employee.getEmail());
-        // Якщо знайшли когось з таким email І це не той самий юзер (перевірка по ID)
         if (existing.isPresent() && (employee.getId() == null || !existing.get().getId().equals(employee.getId()))) {
             bindingResult.rejectValue("email", "error.email", "This email is already in use.");
         }
-        // -----------------------------------------
 
-        // Перевірка дат
+        // --- 3. ВАЛІДАЦІЯ ДАТ (як і було) ---
         if (birthdayDate == null || birthdayDate.trim().isEmpty()) {
             bindingResult.rejectValue("birthday", "error.birthday", "Birthday is required");
         } else {

@@ -234,7 +234,7 @@
 
             <td data-column-id="department" class="js-column-cell">
                 <span th:if="${employee.department != null}" th:text="${employee.department.name}"></span>
-                <span th:unless="${employee.department != null}" class="text-muted">-</span>
+                <span th:unless="${employee.department != null}" class="text-muted fst-italic">No Dept</span>
             </td>
 
             <td data-column-id="hireDate" class="js-column-cell"

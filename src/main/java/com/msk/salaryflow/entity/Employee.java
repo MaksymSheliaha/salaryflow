@@ -1,9 +1,9 @@
 package com.msk.salaryflow.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;      // Додали
-import jakarta.validation.constraints.NotBlank; // Додали
-import jakarta.validation.constraints.NotNull;  // Додали
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -43,11 +43,9 @@ public class Employee {
     private Instant hireDate;
     private Instant birthday;
 
-    @NotNull(message = "Position is required")
     @Enumerated(EnumType.STRING)
     private Position position;
 
-    @NotNull(message = "Department is required") // Обов'язково вибрати департамент
     @ManyToOne
     @JoinColumn(name="department_id")
     private Department department;

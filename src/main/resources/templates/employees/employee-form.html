@@ -62,10 +62,10 @@
             </div>
 
             <div class="col-md-6 mb-3">
-                <label for="position" class="form-label">Position *</label>
+                <label for="position" class="form-label">Position</label>
                 <select class="form-control" id="position" th:field="*{position}"
                         th:classappend="${#fields.hasErrors('position')} ? 'is-invalid'">
-                    <option value="">Select Position</option>
+                    <option value="">Select Position (Default: NONE)</option>
                     <option th:each="position : ${positions}" th:value="${position}" th:text="${position}"></option>
                 </select>
                 <div class="invalid-feedback" th:if="${#fields.hasErrors('position')}" th:errors="*{position}">Error</div>
@@ -90,10 +90,10 @@
             </div>
 
             <div class="col-md-4 mb-3">
-                <label for="department" class="form-label">Department *</label>
+                <label for="department" class="form-label">Department</label>
                 <select class="form-control" id="department" th:field="*{department}"
                         th:classappend="${#fields.hasErrors('department')} ? 'is-invalid'">
-                    <option value="">Select Department</option>
+                    <option value="">No Department</option>
                     <option th:each="dept : ${departments}"
                             th:value="${dept.id}"
                             th:text="${dept.name}"
