@@ -8,7 +8,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -74,5 +79,156 @@ class EmployeeServiceTest {
 
         // Assert
         assertNull(found);
+    }
+
+    @Test
+    void findByEmail_ShouldDelegateToRepository() {
+        String email = "test@test.com";
+        Employee employee = new Employee();
+        employee.setEmail(email);
+
+        when(employeeRepository.findByEmail(email)).thenReturn(Optional.of(employee));
+
+        Optional<Employee> result = employeeService.findByEmail(email);
+
+        assertTrue(result.isPresent());
+        assertEquals(employee, result.get());
+        verify(employeeRepository).findByEmail(email);
+    }
+
+    @Test
+    void findAll_WithNoFilters_ShouldReturnRestResponsePage() {
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("id"));
+        Employee employee = new Employee();
+        Page<Employee> page = new PageImpl<>(List.of(employee), pageable, 1);
+
+        when(employeeRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        Page<Employee> result = employeeService.findAll(null, null, null, null, null, null, pageable);
+
+        assertEquals(1, result.getTotalElements());
+    }
+
+    @Test
+    void findAll_WithSearchTermAndFilters_ShouldBuildPredicates() {
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("firstName"));
+        Employee employee = new Employee();
+        employee.setFirstName("John");
+        employee.setLastName("Doe");
+        employee.setEmail("john@test.com");
+        employee.setBirthday(LocalDate.now().minusYears(65)
+                .atStartOfDay(ZoneId.systemDefault()).toInstant());
+        employee.setSalary(5000.0);
+        employee.setPosition(Position.MANAGER);
+
+        Page<Employee> page = new PageImpl<>(List.of(employee), pageable, 1);
+
+        when(employeeRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        Page<Employee> result = employeeService.findAll(
+                "john",
+                UUID.randomUUID(),
+                Position.MANAGER,
+                true,
+                3000.0,
+                6000.0,
+                pageable
+        );
+
+        assertEquals(1, result.getTotalElements());
+    }
+
+    @Test
+    void refineSorting_ShouldHandleFirstNameLastName() {
+        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Order.asc("firstName")));
+
+        Pageable refined = (Pageable) org.springframework.test.util.ReflectionTestUtils
+                .invokeMethod(employeeService, "refineSorting", pageable);
+
+        Sort sort = refined.getSort();
+        assertNotNull(sort.getOrderFor("firstName"));
+        assertNotNull(sort.getOrderFor("lastName"));
+    }
+
+    @Test
+    void refineSorting_ShouldHandleDepartmentHireDateSalaryBirthday() {
+        Pageable depSort = PageRequest.of(0, 10, Sort.by("department"));
+        Pageable hireSort = PageRequest.of(0, 10, Sort.by("hireDate"));
+        Pageable salarySort = PageRequest.of(0, 10, Sort.by("salary"));
+        Pageable birthdaySort = PageRequest.of(0, 10, Sort.by("birthday"));
+
+        Pageable depRefined = (Pageable) org.springframework.test.util.ReflectionTestUtils
+                .invokeMethod(employeeService, "refineSorting", depSort);
+        Pageable hireRefined = (Pageable) org.springframework.test.util.ReflectionTestUtils
+                .invokeMethod(employeeService, "refineSorting", hireSort);
+        Pageable salaryRefined = (Pageable) org.springframework.test.util.ReflectionTestUtils
+                .invokeMethod(employeeService, "refineSorting", salarySort);
+        Pageable birthdayRefined = (Pageable) org.springframework.test.util.ReflectionTestUtils
+                .invokeMethod(employeeService, "refineSorting", birthdaySort);
+
+        assertNotNull(depRefined.getSort().getOrderFor("department.name"));
+        assertNotNull(hireRefined.getSort().getOrderFor("hireDate"));
+        assertNotNull(salaryRefined.getSort().getOrderFor("salary"));
+        assertNotNull(birthdayRefined.getSort().getOrderFor("birthday"));
+    }
+
+    @Test
+    void update_ShouldSaveEmployee() {
+        Employee employee = new Employee();
+        when(employeeRepository.save(employee)).thenReturn(employee);
+
+        Employee updated = employeeService.update(employee);
+
+        assertEquals(employee, updated);
+        verify(employeeRepository).save(employee);
+    }
+
+    @Test
+    void deleteById_ShouldDeleteWhenExists() {
+        UUID id = UUID.randomUUID();
+        Employee employee = new Employee();
+        employee.setId(id);
+
+        when(employeeRepository.findById(id)).thenReturn(Optional.of(employee));
+
+        Employee deleted = employeeService.deleteById(id);
+
+        assertEquals(employee, deleted);
+        verify(employeeRepository).deleteById(id);
+    }
+
+    @Test
+    void deleteById_ShouldReturnNullWhenNotExists() {
+        UUID id = UUID.randomUUID();
+        when(employeeRepository.findById(id)).thenReturn(Optional.empty());
+
+        Employee deleted = employeeService.deleteById(id);
+
+        assertNull(deleted);
+        verify(employeeRepository, never()).deleteById(id);
+    }
+
+    @Test
+    void findAll_WithUnsortedPageable_ShouldNotChangePageableSorting() {
+        Pageable unsorted = Pageable.unpaged();
+        Employee employee = new Employee();
+        Page<Employee> page = new PageImpl<>(List.of(employee), unsorted, 1);
+
+        when(employeeRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        Page<Employee> result = employeeService.findAll(null, null, null, null, null, null, unsorted);
+
+        assertEquals(1, result.getTotalElements());
+        verify(employeeRepository).findAll(any(Specification.class), eq(unsorted));
+    }
+
+    @Test
+    void refineSorting_ShouldKeepSortForUnknownProperty() {
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("unknownField"));
+
+        Pageable refined = (Pageable) org.springframework.test.util.ReflectionTestUtils
+                .invokeMethod(employeeService, "refineSorting", pageable);
+
+        assertEquals(pageable.getSort(), refined.getSort());
     }
 }

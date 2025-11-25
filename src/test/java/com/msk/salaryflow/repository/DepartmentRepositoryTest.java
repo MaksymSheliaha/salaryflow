@@ -9,7 +9,7 @@ import org.springframework.data.domain.PageRequest;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DataJpaTest // Піднімає JPA і базу H2
+@DataJpaTest
 class DepartmentRepositoryTest {
 
     @Autowired
@@ -17,7 +17,6 @@ class DepartmentRepositoryTest {
 
     @Test
     void searchDepartments_ShouldFindByName() {
-        // Arrange (Зберігаємо дані в тестову базу)
         Department d1 = new Department();
         d1.setName("IT Department");
         d1.setLocation("Room 101");
@@ -28,10 +27,8 @@ class DepartmentRepositoryTest {
         d2.setLocation("Room 102");
         departmentRepository.save(d2);
 
-        // Act (Виконуємо наш кастомний пошук)
         Page<Department> result = departmentRepository.searchDepartments("IT", PageRequest.of(0, 10));
 
-        // Assert
         assertEquals(1, result.getTotalElements());
         assertEquals("IT Department", result.getContent().get(0).getName());
     }
