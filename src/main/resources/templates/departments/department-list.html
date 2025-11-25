@@ -243,6 +243,12 @@
                     View
                 </a>
 
+                <a th:if="${employeeId == null}"
+                   th:href="@{/employees(deptId=${department.id})}"
+                   class="btn btn-outline-secondary btn-sm">
+                    Employees
+                </a>
+
                 <form th:if="${employeeId != null}"
                       th:action="@{/departments/attach}"
                       method="post" class="d-inline">

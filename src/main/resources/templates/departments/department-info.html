@@ -75,6 +75,7 @@
     <div class="mt-4">
         <button type="button" class="btn btn-outline-secondary" onclick="history.back()">Back</button>
         <a class="btn btn-secondary" th:href="@{/departments}">Back to List</a>
+        <a class="btn btn-outline-primary" th:href="@{/employees(deptId=${department.id})}">View Employees</a>
         <a class="btn btn-primary" th:href="@{/departments/update(id=${department.id})}">Edit</a>
     </div>
 
