@@ -2,14 +2,26 @@ package com.msk.salaryflow.service;
 
 import com.msk.salaryflow.aspect.annotation.LogEvent;
 import com.msk.salaryflow.entity.Employee;
+import com.msk.salaryflow.entity.Position;
+import com.msk.salaryflow.model.RestResponsePage;
 import com.msk.salaryflow.repository.EmployeeRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -18,27 +30,122 @@ public class EmployeeService {
 
     private final EmployeeRepository employeeRepository;
 
-    @CacheEvict(value = {"employee", "employee_pages"}, allEntries = true)
+    // КОНСТАНТА ПЕНСІЙНОГО ВІКУ
+    private static final int PENSION_AGE = 60;
+
+    // Оновлена сигнатура методу: додали pensioners, minSalary, maxSalary
+    @Cacheable(value = "employee_pages", key = "{#searchTerm, #departmentId, #position, #pensioners, #minSalary, #maxSalary, #pageable.pageNumber, #pageable.pageSize, #pageable.sort.toString()}")
+    public Page<Employee> findAll(String searchTerm, UUID departmentId, Position position,
+                                  Boolean pensioners, Double minSalary, Double maxSalary,
+                                  Pageable pageable) {
+
+        Pageable sortedPageable = refineSorting(pageable);
+
+        Specification<Employee> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // 1. Пошук по тексту
+            if (StringUtils.hasText(searchTerm)) {
+                String likePattern = "%" + searchTerm.toLowerCase() + "%";
+                Predicate firstName = cb.like(cb.lower(root.get("firstName")), likePattern);
+                Predicate lastName = cb.like(cb.lower(root.get("lastName")), likePattern);
+                Predicate email = cb.like(cb.lower(root.get("email")), likePattern);
+                predicates.add(cb.or(firstName, lastName, email));
+            }
+
+            // 2. Департамент
+            if (departmentId != null) {
+                predicates.add(cb.equal(root.get("department").get("id"), departmentId));
+            }
+
+            // 3. Посада
+            if (position != null) {
+                predicates.add(cb.equal(root.get("position"), position));
+            }
+
+            // 4. Фільтр пенсіонерів (вік > PENSION_AGE)
+            if (Boolean.TRUE.equals(pensioners)) {
+                // Дата відсікання: Сьогодні мінус 60 років
+                LocalDate cutoffDate = LocalDate.now().minusYears(PENSION_AGE);
+                // День народження має бути РАНІШЕ за дату відсікання
+                predicates.add(cb.lessThanOrEqualTo(root.get("birthday"), cutoffDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+            }
+
+            // 5. Мінімальна зарплата
+            if (minSalary != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("salary"), minSalary));
+            }
+
+            // 6. Максимальна зарплата
+            if (maxSalary != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("salary"), maxSalary));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<Employee> page = employeeRepository.findAll(spec, sortedPageable);
+        return new RestResponsePage<>(page.getContent(), page.getPageable(), page.getTotalElements());
+    }
+
+    private Pageable refineSorting(Pageable pageable) {
+        Sort sort = pageable.getSort();
+        if (sort.isUnsorted()) return pageable;
+
+        Sort.Order order = sort.stream().findFirst().orElse(null);
+        if (order == null) return pageable;
+
+        String property = order.getProperty();
+        Sort.Direction direction = order.getDirection();
+
+        Sort newSort = sort;
+
+        if ("firstName".equals(property)) {
+            newSort = Sort.by(direction, "firstName").and(Sort.by(direction, "lastName"));
+        } else if ("lastName".equals(property)) {
+            newSort = Sort.by(direction, "lastName").and(Sort.by(direction, "firstName"));
+        } else if ("department".equals(property)) {
+            newSort = Sort.by(direction, "department.name");
+        } else if ("hireDate".equals(property)) {
+            newSort = Sort.by(direction, "hireDate").and(Sort.by(Sort.Direction.ASC, "lastName"));
+        } else if ("salary".equals(property)) {
+            newSort = Sort.by(direction, "salary").and(Sort.by(Sort.Direction.ASC, "lastName"));
+        } else if ("birthday".equals(property)) { // <--- НОВИЙ БЛОК
+            newSort = Sort.by(direction, "birthday").and(Sort.by(Sort.Direction.ASC, "lastName"));
+        }
+
+
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), newSort);
+    }
+
+    // ... Решта методів (update, save, deleteById, findById) залишаються без змін ...
+    @Caching(evict = {
+            @CacheEvict(value = "employee_pages", allEntries = true),
+            @CacheEvict(value = "employee", key = "#employee.id")
+    })
     @LogEvent(action = "UPDATE_EMPLOYEE")
     public Employee update(Employee employee) {
         return employeeRepository.save(employee);
     }
 
-    @CacheEvict(value = {"employee", "employee_pages"}, allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(value = "employee_pages", allEntries = true)
+    })
     @LogEvent(action = "CREATE_EMPLOYEE")
     public Employee save(Employee employee) {
         return employeeRepository.save(employee);
     }
 
-    public Page<Employee> findAll(Pageable pageable){
-        return employeeRepository.findAll(pageable);
-    }
-
-    @CacheEvict(value = {"employee", "employee_pages"}, allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(value = "employee_pages", allEntries = true),
+            @CacheEvict(value = "employee", key = "#id")
+    })
     @LogEvent(action = "DELETE_EMPLOYEE")
     public Employee deleteById(UUID id){
         Employee toDelete = employeeRepository.findById(id).orElse(null);
-        employeeRepository.deleteById(id);
+        if (toDelete != null) {
+            employeeRepository.deleteById(id);
+        }
         return toDelete;
     }
 
