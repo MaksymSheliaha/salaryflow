@@ -1,7 +1,7 @@
 package com.msk.salaryflow.controller;
 
 import com.msk.salaryflow.entity.EventLog;
-import com.msk.salaryflow.service.EventLogService;
+import com.msk.salaryflow.service.*; // Імпортуємо всі сервіси
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,7 +20,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @RequestMapping("events")
 public class EventLogController {
+
     private final EventLogService eventLogService;
+
+    // Додаємо сервіси, щоб перевіряти існування об'єктів
+    private final EmployeeService employeeService;
+    private final DepartmentService departmentService;
+    private final AbsenceService absenceService;
+    private final UserService userService;
 
     @GetMapping
     public String listEvents(@RequestParam(required = false) String from,
@@ -30,13 +37,30 @@ public class EventLogController {
                              @PageableDefault(sort = "timestamp", direction = Sort.Direction.DESC) Pageable pageable,
                              Model model) {
 
+        // --- ВАЛІДАЦІЯ ДАТ ---
         if (from != null && !from.isBlank() && to != null && !to.isBlank()) {
             LocalDate fromDate = LocalDate.parse(from);
             LocalDate toDate = LocalDate.parse(to);
+
             if (fromDate.isAfter(toDate)) {
-                return "redirect:/events";
+                // 1. Додаємо помилку
+                model.addAttribute("error", "Start date cannot be after End date.");
+
+                // 2. Повертаємо пусту сторінку, щоб не навантажувати базу
+                model.addAttribute("eventLogs", Page.empty().getContent());
+                model.addAttribute("page", Page.empty(pageable));
+
+                // 3. Повертаємо введені параметри, щоб користувач міг їх виправити
+                model.addAttribute("from", from);
+                model.addAttribute("to", to);
+                model.addAttribute("eventType", eventType);
+                model.addAttribute("entity", entity);
+
+                // Повертаємо сторінку (не редірект!)
+                return "events/event-log-list";
             }
         }
+        // ---------------------
 
         Page<EventLog> eventLogs = eventLogService.getEventLogs(pageable, from, to, eventType, entity);
 
@@ -64,7 +88,6 @@ public class EventLogController {
         return "redirect:/events?from=" + (from != null ? from : "") + "&to=" + (to != null ? to : "") + "&page=" + pageable.getPageNumber();
     }
 
-    // --- ОНОВЛЕНИЙ МЕТОД (Замість старого deleteByFilter) ---
     @PostMapping("/delete-by-filter")
     public String deleteByFilter(@RequestParam(required = false) String from,
                                  @RequestParam(required = false) String to,
@@ -85,23 +108,57 @@ public class EventLogController {
         return "redirect:/events";
     }
 
+    // --- ГОЛОВНА ЗМІНА ТУТ ---
     @GetMapping("/open-target")
     public String openTarget(@RequestParam("entity") String entityName,
                              @RequestParam("targetId") String targetId,
                              @RequestParam("action") String action,
                              @RequestParam("logId") UUID logId) {
+
+        // Якщо це подія видалення, то об'єкта точно немає -> йдемо в RAW
         if (action != null && action.toUpperCase().startsWith("DELETE")) {
             return "redirect:/events/" + logId + "/raw";
         }
-        String redirectUrl;
-        switch (entityName) {
-            case "Employee" -> redirectUrl = "/employees/" + targetId;
-            case "Department" -> redirectUrl = "/departments/" + targetId;
-            case "Absence" -> redirectUrl = "/absences/" + targetId;
-            case "User" -> redirectUrl = "/users/" + targetId;
-            default -> redirectUrl = "/";
+
+        boolean exists = false;
+        String redirectUrl = "/";
+
+        try {
+            UUID uuid = UUID.fromString(targetId);
+
+            // Перевіряємо, чи існує об'єкт в базі
+            switch (entityName) {
+                case "Employee":
+                    exists = employeeService.findById(uuid) != null;
+                    redirectUrl = "/employees/" + targetId;
+                    break;
+                case "Department":
+                    exists = departmentService.findById(uuid) != null;
+                    redirectUrl = "/departments/" + targetId;
+                    break;
+                case "Absence":
+                    exists = absenceService.findById(uuid).isPresent(); // absenceService повертає Optional
+                    redirectUrl = "/absences/" + targetId;
+                    break;
+                case "User":
+                    exists = userService.findById(uuid) != null;
+                    redirectUrl = "/users/" + targetId;
+                    break;
+                default:
+                    exists = false;
+            }
+        } catch (Exception e) {
+            // Якщо ID битий або інша помилка
+            exists = false;
         }
-        return "redirect:" + redirectUrl;
+
+        // Якщо об'єкт існує - йдемо на його сторінку
+        if (exists) {
+            return "redirect:" + redirectUrl;
+        } else {
+            // Якщо об'єкт видалено (exists == false) - йдемо на перегляд логу
+            return "redirect:/events/" + logId + "/raw";
+        }
     }
 
     @GetMapping("/{id}/raw")
@@ -115,7 +172,14 @@ public class EventLogController {
         rawData.put("Event", log.getEvent());
         rawData.put("Entity", log.getEntityName());
         rawData.put("Author", log.getAuthor());
+        rawData.put("Target Name", log.getTargetName()); // Додали ім'я
         rawData.put("Target ID", log.getTargetId());
+
+        // Додаємо зміни в таблицю raw, якщо вони є
+        if (log.getChangeDetails() != null) {
+            rawData.put("--- CHANGES ---", "");
+            rawData.putAll(log.getChangeDetails());
+        }
 
         model.addAttribute("log", log);
         model.addAttribute("rawData", rawData);

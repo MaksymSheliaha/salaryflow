@@ -4,14 +4,15 @@ import com.msk.salaryflow.entity.Department;
 import com.msk.salaryflow.entity.DepartmentInfo;
 import com.msk.salaryflow.entity.Employee;
 import com.msk.salaryflow.model.DepartmentSearchRequest;
-// import com.msk.salaryflow.model.PageResponse; // Видаліть цей імпорт
 import com.msk.salaryflow.service.DepartmentService;
 import com.msk.salaryflow.service.EmployeeService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page; // Додайте цей імпорт
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -31,11 +32,8 @@ public class DepartmentController {
                                   Pageable pageable){
 
         DepartmentSearchRequest request = new DepartmentSearchRequest(pageable, searchTerm, empInfo);
-
-        // Змінюємо тип на Page
         Page<DepartmentInfo> page = departmentService.findAll(request);
 
-        // Тепер .getContent() працює коректно, бо це стандартний Page
         model.addAttribute("departments", page.getContent());
         model.addAttribute("page", page);
         model.addAttribute("employeeId", employeeId);
@@ -43,8 +41,16 @@ public class DepartmentController {
         return "departments/department-list";
     }
 
+    // --- ОНОВЛЕНИЙ МЕТОД SAVE ---
     @PostMapping("/save")
-    private String save(@ModelAttribute("department") Department department){
+    private String save(@Valid @ModelAttribute("department") Department department,
+                        BindingResult bindingResult){ // BindingResult ловить помилки
+
+        // Якщо є помилки валідації - повертаємось на форму
+        if (bindingResult.hasErrors()) {
+            return "departments/department-form";
+        }
+
         Department saved;
         if(department.getId()==null){
             saved = departmentService.save(department);
@@ -53,6 +59,7 @@ public class DepartmentController {
         }
         return "redirect:/departments/"+saved.getId();
     }
+
     @GetMapping("/add")
     private String showFormForAdd(Model model){
         Department department = new Department();
@@ -66,7 +73,6 @@ public class DepartmentController {
         if(department==null) return "redirect:/departments/notFound";
         model.addAttribute("department", department);
         return "departments/department-form";
-
     }
 
     @GetMapping("/{id}")
