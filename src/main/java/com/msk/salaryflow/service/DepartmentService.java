@@ -24,7 +24,7 @@ public class DepartmentService {
     private final DepartmentInfoRepository departmentInfoRepository;
 
     @LogEvent(action = "CREATE_DEPARTMENT")
-    @CacheEvict(value = { "department", "department_pages", "departmentsSearch" }, allEntries = true)
+    @CacheEvict(value = { "department", "department_pages", "departmentsSearch", "employee", "employee_pages" }, allEntries = true)
     public Department save(Department department) {
         return departmentRepository.save(department);
     }
@@ -65,7 +65,7 @@ public class DepartmentService {
     }
 
     @LogEvent(action = "DELETE_DEPARTMENT")
-    @CacheEvict(value = { "department", "department_pages", "departmentsSearch" }, allEntries = true)
+    @CacheEvict(value = { "department", "department_pages", "departmentsSearch", "employee", "employee_pages" }, allEntries = true)
     public Department deleteById(UUID id) {
         Department toDelete = departmentRepository.findById(id).orElse(null);
         departmentRepository.deleteById(id);
