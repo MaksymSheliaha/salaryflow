@@ -20,7 +20,7 @@ spring:
     type: simple
   data:
     mongodb:
-      uri: mongodb://localhost:27017/testdb
+      uri: mongodb://mongo:mongo@localhost:27017/
       database: testdb
   sql:
     init:
