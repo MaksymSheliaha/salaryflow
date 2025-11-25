@@ -4,6 +4,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 import java.util.UUID;
@@ -15,6 +16,10 @@ public class Department {
     @Id
     @GeneratedValue
     private UUID id;
+
+    @NotBlank(message = "Department name is required")
     private String name;
+
+    @NotBlank(message = "Location is required")
     private String location;
 }
