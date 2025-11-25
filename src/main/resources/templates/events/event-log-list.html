@@ -14,6 +14,10 @@
         <h3>Event Logs</h3>
     </div>
 
+    <div th:if="${error != null}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong th:text="${error}">Error message</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
     <form class="row g-2 mb-3 bg-light p-2 rounded border" method="get" th:action="@{/events}">
         <input type="hidden" name="size" th:value="${page.size}">
         <input type="hidden" name="sort" th:value="${sortField + ',' + sortDir}">
@@ -144,7 +148,7 @@
                     <button type="button" class="btn btn-sm btn-outline-info"
                             data-bs-toggle="modal"
                             th:data-bs-target="'#changesModal-' + ${log.id}">
-                         Diff
+                        Diff
                     </button>
                 </div>
                 <span th:if="${log.changeDetails == null or log.changeDetails.isEmpty()}" class="text-muted small">-</span>

@@ -37,13 +37,30 @@ public class EventLogController {
                              @PageableDefault(sort = "timestamp", direction = Sort.Direction.DESC) Pageable pageable,
                              Model model) {
 
+        // --- ВАЛІДАЦІЯ ДАТ ---
         if (from != null && !from.isBlank() && to != null && !to.isBlank()) {
             LocalDate fromDate = LocalDate.parse(from);
             LocalDate toDate = LocalDate.parse(to);
+
             if (fromDate.isAfter(toDate)) {
-                return "redirect:/events";
+                // 1. Додаємо помилку
+                model.addAttribute("error", "Start date cannot be after End date.");
+
+                // 2. Повертаємо пусту сторінку, щоб не навантажувати базу
+                model.addAttribute("eventLogs", Page.empty().getContent());
+                model.addAttribute("page", Page.empty(pageable));
+
+                // 3. Повертаємо введені параметри, щоб користувач міг їх виправити
+                model.addAttribute("from", from);
+                model.addAttribute("to", to);
+                model.addAttribute("eventType", eventType);
+                model.addAttribute("entity", entity);
+
+                // Повертаємо сторінку (не редірект!)
+                return "events/event-log-list";
             }
         }
+        // ---------------------
 
         Page<EventLog> eventLogs = eventLogService.getEventLogs(pageable, from, to, eventType, entity);
 
