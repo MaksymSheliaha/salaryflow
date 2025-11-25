@@ -5,6 +5,7 @@ import com.msk.salaryflow.entity.Gender;
 import com.msk.salaryflow.entity.Position;
 import com.msk.salaryflow.service.EmployeeService;
 import com.msk.salaryflow.service.DepartmentService;
+import jakarta.validation.Valid; // Додали
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,13 +13,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult; // Додали
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.UUID;
-
 
 @RequestMapping("/employees")
 @Controller
@@ -32,29 +33,20 @@ public class EmployeeController {
                                 @RequestParam(value = "q", required = false) String searchTerm,
                                 @RequestParam(value = "deptId", required = false) UUID departmentId,
                                 @RequestParam(value = "pos", required = false) Position position,
-
-                                // НОВІ ПАРАМЕТРИ
                                 @RequestParam(value = "pensioners", required = false) Boolean pensioners,
                                 @RequestParam(value = "minSalary", required = false) Double minSalary,
                                 @RequestParam(value = "maxSalary", required = false) Double maxSalary,
-
                                 @PageableDefault(sort = "lastName", direction = Sort.Direction.ASC, size = 10) Pageable pageable){
 
-        // Передаємо все в сервіс
         Page<Employee> employees = employeeService.findAll(searchTerm, departmentId, position, pensioners, minSalary, maxSalary, pageable);
 
         model.addAttribute("employees", employees);
-
-        // Зберігаємо стан фільтрів
         model.addAttribute("currentSearch", searchTerm);
         model.addAttribute("currentDeptId", departmentId);
         model.addAttribute("currentPos", position);
-
-        // Повертаємо нові фільтри в HTML
         model.addAttribute("pensioners", pensioners);
         model.addAttribute("minSalary", minSalary);
         model.addAttribute("maxSalary", maxSalary);
-
         model.addAttribute("page", employees);
         model.addAttribute("departmentList", departmentService.findAll(Pageable.unpaged()).getContent());
         model.addAttribute("positionList", Position.values());
@@ -62,22 +54,42 @@ public class EmployeeController {
         return "employees/employee-list";
     }
 
-    // ... Решта методів (save, add, update, delete) без змін ...
     @PostMapping("/save")
-    private String save(@ModelAttribute("employee") Employee employee,
+    private String save(@Valid @ModelAttribute("employee") Employee employee,
+                        BindingResult bindingResult, // Сюди складаються помилки
                         @RequestParam(value = "birthdayDate", required = false) String birthdayDate,
-                        @RequestParam(value = "hireDateStr", required = false) String hireDateStr){
+                        @RequestParam(value = "hireDateStr", required = false) String hireDateStr,
+                        Model model){ // Model потрібна, щоб повернути дані на форму при помилці
 
-        if (birthdayDate != null && !birthdayDate.isEmpty()) {
-            LocalDate localDate = LocalDate.parse(birthdayDate);
-            employee.setBirthday(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        if (birthdayDate == null || birthdayDate.trim().isEmpty()) {
+            bindingResult.rejectValue("birthday", "error.birthday", "Birthday is required");
+        } else {
+            try {
+                LocalDate localDate = LocalDate.parse(birthdayDate);
+                employee.setBirthday(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+            } catch (Exception e) {
+                bindingResult.rejectValue("birthday", "error.birthday", "Invalid birthday format");
+            }
         }
 
-        if (hireDateStr != null && !hireDateStr.isEmpty()) {
-            LocalDate localDate = LocalDate.parse(hireDateStr);
-            employee.setHireDate(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-        } else if (employee.getHireDate() == null) {
-            employee.setHireDate(Instant.now());
+        if (hireDateStr == null || hireDateStr.trim().isEmpty()) {
+            bindingResult.rejectValue("hireDate", "error.hireDate", "Hire Date is required");
+        } else {
+            try {
+                LocalDate localDate = LocalDate.parse(hireDateStr);
+                employee.setHireDate(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+            } catch (Exception e) {
+                bindingResult.rejectValue("hireDate", "error.hireDate", "Invalid hire date format");
+            }
+        }
+
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("genders", Gender.values());
+            model.addAttribute("positions", Position.values());
+            model.addAttribute("departments", departmentService.findAll(Pageable.unpaged()).getContent());
+
+            // Повертаємо користувача назад на форму, показуючи помилки
+            return "employees/employee-form";
         }
 
         if(employee.getId()==null){
@@ -91,8 +103,6 @@ public class EmployeeController {
     @GetMapping("/add")
     private String showFormForAdd(Model model){
         Employee employee = new Employee();
-        employee.setHireDate(Instant.now());
-        employee.setSalary(0.0);
 
         model.addAttribute("employee", employee);
         model.addAttribute("genders", Gender.values());
