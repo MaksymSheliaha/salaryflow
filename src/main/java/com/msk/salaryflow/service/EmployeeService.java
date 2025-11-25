@@ -112,7 +112,7 @@ public class EmployeeService {
     }
 
     @Caching(evict = {
-            @CacheEvict(value = "employee_pages", allEntries = true),
+            @CacheEvict(value = { "department", "department_pages", "departmentsSearch", "employee", "employee_pages" }, allEntries = true),
             @CacheEvict(value = "employee", key = "#employee.id")
     })
     @LogEvent(action = "UPDATE_EMPLOYEE")
@@ -121,7 +121,7 @@ public class EmployeeService {
     }
 
     @Caching(evict = {
-            @CacheEvict(value = "employee_pages", allEntries = true)
+            @CacheEvict(value = { "department", "department_pages", "departmentsSearch", "employee", "employee_pages" }, allEntries = true)
     })
     @LogEvent(action = "CREATE_EMPLOYEE")
     public Employee save(Employee employee) {
@@ -129,7 +129,7 @@ public class EmployeeService {
     }
 
     @Caching(evict = {
-            @CacheEvict(value = "employee_pages", allEntries = true),
+            @CacheEvict(value = { "department", "department_pages", "departmentsSearch", "employee", "employee_pages" }, allEntries = true),
             @CacheEvict(value = "employee", key = "#id")
     })
     @LogEvent(action = "DELETE_EMPLOYEE")
