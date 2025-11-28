@@ -1,102 +1,185 @@
 package com.msk.salaryflow.service;
 
+import com.msk.salaryflow.aspect.annotation.LogEvent;
 import com.msk.salaryflow.entity.Absence;
+import com.msk.salaryflow.entity.AbsenceType;
+import com.msk.salaryflow.entity.Employee;
+import com.msk.salaryflow.model.AbsenceResponse;
+import com.msk.salaryflow.model.RestResponsePage; // Імпортуємо наш новий клас
 import com.msk.salaryflow.repository.AbsenceRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
+import com.msk.salaryflow.repository.EmployeeRepository;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
+import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.io.Serializable;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class AbsenceService {
 
-    private final AbsenceRepository repository;
-    private final CacheManager cacheManager;
+    private final AbsenceRepository absenceRepository;
+    private final EmployeeRepository employeeRepository;
 
-    @Autowired
-    public AbsenceService(AbsenceRepository repository, @Qualifier("mongoRedisCacheManager") CacheManager cacheManager) {
-        this.repository = repository;
-        this.cacheManager = cacheManager;
+    @Cacheable(value = "absences_page", key = "{#searchTerm, #typeFilter, #pageable.pageNumber, #pageable.pageSize, #pageable.sort.toString()}")
+    public Page<AbsenceResponse> findAll(String searchTerm, AbsenceType typeFilter, Pageable pageable) {
+        Pageable fixedPageable = mapSortFields(pageable);
+        Specification<Absence> spec = createSpecification(searchTerm, typeFilter);
+        Page<Absence> pageResult = absenceRepository.findAll(spec, fixedPageable);
+        List<AbsenceResponse> responseList = pageResult.getContent().stream()
+                .map(this::mapToResponse)
+                .toList();
+        return new RestResponsePage<>(responseList, fixedPageable, pageResult.getTotalElements());
+    }
+    @Cacheable(value = "absence_response", key = "#id")
+    public AbsenceResponse findByIdResponse(UUID id) {
+        return absenceRepository.findById(id)
+                .map(this::mapToResponse)
+                .orElse(null);
     }
 
-    public Page<Absence> findAll(Pageable pageable) {
-        String key = pageable.getPageNumber() + "-" + pageable.getPageSize();
-        Cache cache = cacheManager.getCache("absence_pages");
-        if (cache != null) {
-            try {
-                PageDto dto = cache.get(key, PageDto.class);
-                if (dto != null) {
-                    PageRequest pr = PageRequest.of(dto.number, dto.size);
-                    return new PageImpl<>(dto.content, pr, dto.totalElements);
-                }
-            } catch (Exception ex) {
-                try { cache.evict(key); } catch (Exception ignore) {}
-            }
-        }
-
-        Page<Absence> page = repository.findAll(pageable);
-
-        if (cache != null) {
-            PageDto dto = new PageDto(page.getContent(), page.getTotalElements(),
-                    page.getNumber(), page.getSize(), page.getTotalPages(),
-                    page.isFirst(), page.isLast());
-            try { cache.put(key, dto); } catch (Exception ignore) {}
-        }
-
-        return page;
-    }
-
-    @Cacheable(value = "absence", key = "#id", cacheManager = "mongoRedisCacheManager")
     public Optional<Absence> findById(UUID id) {
-        return repository.findById(id);
+        return absenceRepository.findById(id);
     }
 
-    @CacheEvict(value = {"absence", "absence_pages"}, allEntries = true, cacheManager = "mongoRedisCacheManager")
+    @Caching(evict = {
+            @CacheEvict(value = "absence_response", key = "#absence.id"),
+            @CacheEvict(value = "absences_page", allEntries = true)
+    })
+    @LogEvent(action = "CREATE_ABSENCE")
     public Absence save(Absence absence) {
-        if (absence.getId() == null) {
-            absence.setId(UUID.randomUUID());
-        }
-        return repository.save(absence);
+        return absenceRepository.save(absence);
     }
 
-    @CacheEvict(value = {"absence", "absence_pages"}, allEntries = true, cacheManager = "mongoRedisCacheManager")
-    public void deleteById(UUID id) {
-        repository.deleteById(id);
+    @Caching(evict = {
+            @CacheEvict(value = "absence_response", key = "#absence.id"),
+            @CacheEvict(value = "absences_page", allEntries = true)
+    })
+    @LogEvent(action = "UPDATE_ABSENCE")
+    public Absence update(Absence absence) {
+        return absenceRepository.save(absence);
     }
 
-    static class PageDto implements Serializable {
-        private static final long serialVersionUID = 1L;
-        public List<Absence> content;
-        public long totalElements;
-        public int number;
-        public int size;
-        public int totalPages;
-        public boolean first;
-        public boolean last;
+    @Caching(evict = {
+            @CacheEvict(value = "absence_response", key = "#id"),
+            @CacheEvict(value = "absences_page", allEntries = true)
+    })
+    @LogEvent(action = "DELETE_ABSENCE")
+    public Absence deleteById(UUID id) {
+        Absence deleted = absenceRepository.findById(id).orElse(null);
+        absenceRepository.deleteById(id);
+        return deleted;
+    }
 
-        public PageDto() {}
-
-        public PageDto(List<Absence> content, long totalElements, int number, int size,
-                       int totalPages, boolean first, boolean last) {
-            this.content = content;
-            this.totalElements = totalElements;
-            this.number = number;
-            this.size = size;
-            this.totalPages = totalPages;
-            this.first = first;
-            this.last = last;
+    private Pageable mapSortFields(Pageable pageable) {
+        if (pageable.getSort().isUnsorted()) {
+            return pageable;
         }
+
+        Sort newSort = Sort.unsorted();
+        for (Sort.Order order : pageable.getSort()) {
+            String property = order.getProperty();
+            Sort.Direction direction = order.getDirection();
+
+            if ("employeeFirstName".equals(property)) {
+                property = "employee.firstName";
+            } else if ("employeeLastName".equals(property)) {
+                property = "employee.lastName";
+            }
+
+            newSort = newSort.and(Sort.by(direction, property));
+        }
+
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), newSort);
+    }
+
+    private Specification<Absence> createSpecification(String searchTerm, AbsenceType typeFilter) {
+        return (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (Long.class != query.getResultType()) {
+                root.fetch("employee", JoinType.LEFT);
+            }
+            if (typeFilter != null) {
+                predicates.add(criteriaBuilder.equal(root.get("type"), typeFilter));
+            }
+            if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+                String likePattern = "%" + searchTerm.toLowerCase() + "%";
+                Join<Absence, Employee> employeeJoin = root.join("employee", JoinType.LEFT);
+
+                Predicate firstNameMatch = criteriaBuilder.like(criteriaBuilder.lower(employeeJoin.get("firstName")), likePattern);
+                Predicate lastNameMatch = criteriaBuilder.like(criteriaBuilder.lower(employeeJoin.get("lastName")), likePattern);
+
+                predicates.add(criteriaBuilder.or(firstNameMatch, lastNameMatch));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    private AbsenceResponse mapToResponse(Absence absence) {
+        AbsenceResponse response = new AbsenceResponse();
+        response.setId(absence.getId());
+        response.setType(absence.getType());
+        response.setStartDate(absence.getStartDate());
+        response.setEndDate(absence.getEndDate());
+        response.setComment(absence.getComment());
+        response.setSickPay(0.0);
+
+        Employee employee = absence.getEmployee();
+        if (employee == null && absence.getEmployeeId() != null) {
+            employee = employeeRepository.findById(absence.getEmployeeId()).orElse(null);
+        }
+
+        if (employee != null) {
+            response.setEmployeeFirstName(employee.getFirstName());
+            response.setEmployeeLastName(employee.getLastName());
+
+            if (absence.getType() == AbsenceType.SICK_LEAVE && employee.getHireDate() != null) {
+                calculateSickPay(response, absence, employee);
+            }
+        } else {
+            response.setEmployeeFirstName("Unknown");
+            response.setEmployeeLastName("(ID not found)");
+        }
+        return response;
+    }
+
+    private void calculateSickPay(AbsenceResponse response, Absence absence, Employee employee) {
+        LocalDate hireDate = LocalDate.ofInstant(employee.getHireDate(), ZoneId.systemDefault());
+
+        if (hireDate.isAfter(LocalDate.now())) {
+            response.setSickPay(0.0);
+            return;
+        }
+
+        long yearsWorked = ChronoUnit.YEARS.between(hireDate, LocalDate.now());
+        double percentage = 0.5;
+        if (yearsWorked >= 2 && yearsWorked <= 4) {
+            percentage = 0.8;
+        } else if (yearsWorked > 4) {
+            percentage = 1.0;
+        }
+
+        long days = ChronoUnit.DAYS.between(absence.getStartDate(), absence.getEndDate()) + 1;
+        if (days <= 0) days = 1;
+
+        double dailySalary = employee.getSalary() / 30.0;
+        double calculatedPay = dailySalary * days * percentage;
+
+        response.setSickPay(Math.round(calculatedPay * 100.0) / 100.0);
     }
 }

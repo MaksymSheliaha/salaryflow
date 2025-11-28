@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: salaryflow-test
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    # ЦЕЙ РЯДОК ОБОВ'ЯЗКОВИЙ:
+    defer-datasource-initialization: true
+
+  flyway:
+    enabled: false
+  cache:
+    type: simple
+  data:
+    mongodb:
+      uri: mongodb://mongo:mongo@localhost:27017/
+      database: testdb
+  sql:
+    init:
+      mode: always

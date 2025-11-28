@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Event Log Raw View</title>
+    <style>
+        pre {
+            white-space: pre-wrap;       /* CSS3 */
+            white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+            white-space: -pre-wrap;      /* Opera 4-6 */
+            white-space: -o-pre-wrap;    /* Opera 7 */
+            word-wrap: break-word;       /* Internet Explorer 5.5+ */
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/header :: navbar}"></div>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Event Log Details</h3>
+        <a href="javascript:void(0);" onclick="goBack()" class="btn btn-secondary">Back to list</a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white">
+            Raw Data
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-striped table-hover mb-0">
+                <tbody>
+                <tr th:each="entry : ${rawData}">
+
+                    <th scope="row" style="width: 30%;" th:text="${entry.key}">Key</th>
+
+                    <td>
+                        <span th:if="${entry.key == '--- CHANGES ---'}" class="text-muted fst-italic">
+                            Below are the detected changes
+                        </span>
+
+                        <span th:unless="${entry.key == '--- CHANGES ---'}" th:text="${entry.value}">Value</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#rawJsonCollapse">
+            Show Raw Object Debug
+        </button>
+        <div class="collapse mt-2" id="rawJsonCollapse">
+            <div class="card card-body">
+                <pre th:text="${log}"></pre>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    function goBack() {
+        const lastUrl = sessionStorage.getItem('lastEventUrl');
+        if (lastUrl) {
+            window.location.href = lastUrl;
+        } else {
+            window.location.href = '/events';
+        }
+    }
+</script>
+</body>
+</html>

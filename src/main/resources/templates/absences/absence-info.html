@@ -1,24 +1,75 @@
 <!doctype html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <!-- ...existing head code... -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
-    <title>Absence Info</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Absence Details</title>
 </head>
 <body>
-<div class="container mt-4">
-    <h2>Absence Info</h2>
-    <dl class="row">
-        <dt class="col-sm-3">ID</dt><dd class="col-sm-9" th:text="${absence.id}">ID</dd>
-        <dt class="col-sm-3">Employee</dt><dd class="col-sm-9" th:text="${absence.employeeId}">EMP</dd>
-        <dt class="col-sm-3">Type</dt><dd class="col-sm-9" th:text="${absence.type}">TYPE</dd>
-        <dt class="col-sm-3">Start</dt><dd class="col-sm-9" th:text="${absence.startDate}">START</dd>
-        <dt class="col-sm-3">End</dt><dd class="col-sm-9" th:text="${absence.endDate}">END</dd>
-        <dt class="col-sm-3">Comment</dt><dd class="col-sm-9" th:text="${absence.comment}">COMMENT</dd>
-    </dl>
-    <a class="btn btn-secondary" th:href="@{/absences}">Back</a>
-    <a class="btn btn-primary" th:href="@{/absences/update(id=${absence.id})}">Edit</a>
+<div th:replace="~{fragments/header :: navbar}"></div>
+
+<div class="container">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Absence Details</h4>
+            <span th:class="${'badge ' +
+                    (absence.type.name() == 'VACATION' ? 'text-bg-success' :
+                    (absence.type.name() == 'SICK_LEAVE' ? 'text-bg-danger' : 'text-bg-warning'))}"
+                  th:text="${absence.type}">TYPE</span>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Employee:</dt>
+                <dd class="col-sm-9" th:text="${absence.employeeFirstName + ' ' + absence.employeeLastName}">Name</dd>
+
+                <dt class="col-sm-3">Start Date:</dt>
+                <dd class="col-sm-9" th:text="${absence.startDate}">2025-01-01</dd>
+
+                <dt class="col-sm-3">End Date:</dt>
+                <dd class="col-sm-9" th:text="${absence.endDate}">2025-01-10</dd>
+
+                <dt class="col-sm-3">Comment:</dt>
+                <dd class="col-sm-9">
+                    <p th:if="${absence.comment != null and !absence.comment.isEmpty()}"
+                       th:text="${absence.comment}" class="p-2 bg-light rounded border"></p>
+                    <span th:unless="${absence.comment != null and !absence.comment.isEmpty()}" class="text-muted">No comments.</span>
+                </dd>
+            </dl>
+
+            <div class="mt-4">
+                <button type="button" class="btn btn-secondary" onclick="goBack()">Back to List</button>
+
+                <a class="btn btn-primary" th:href="@{/absences/update(id=${absence.id})}">Edit</a>
+            </div>
+        </div>
+    </div>
+
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    function goBack() {
+        // 1. Логіка повернення в Events
+        if (document.referrer && document.referrer.includes('/events')) {
+            const lastEventUrl = sessionStorage.getItem('lastEventUrl');
+            if (lastEventUrl) {
+                window.location.href = lastEventUrl;
+            } else {
+                window.location.href = '/events';
+            }
+            return;
+        }
+
+        // 2. Логіка повернення в Absences
+        const lastUrl = sessionStorage.getItem('lastAbsenceUrl');
+        if (lastUrl) {
+            window.location.href = lastUrl;
+        } else {
+            window.location.href = '/absences';
+        }
+    }
+</script>
 </body>
 </html>
-
