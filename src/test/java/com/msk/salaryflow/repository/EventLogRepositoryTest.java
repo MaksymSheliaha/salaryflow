@@ -24,7 +24,6 @@ class EventLogRepositoryTest {
 
     @Test
     void searchLogs_ShouldReturnOnlyMatchingEvents() {
-        // очистити колекцію перед тестом
         eventLogRepository.deleteAll();
 
         Instant now = Instant.now();

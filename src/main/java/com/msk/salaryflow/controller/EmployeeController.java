@@ -16,7 +16,6 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Optional;
@@ -78,8 +77,6 @@ public class EmployeeController {
                         @RequestParam(value = "hireDateStr", required = false) String hireDateStr,
                         Model model){
 
-        // --- 1. ЛОГІКА ЗА ЗАМОВЧУВАННЯМ ---
-        // Якщо позицію не вибрали -> ставимо NONE
         if (employee.getPosition() == null) {
             employee.setPosition(Position.NONE);
         }
@@ -88,7 +85,6 @@ public class EmployeeController {
             bindingResult.rejectValue("email", "error.email", "This email is already in use.");
         }
 
-        // --- 3. ВАЛІДАЦІЯ ДАТ (як і було) ---
         if (birthdayDate == null || birthdayDate.trim().isEmpty()) {
             bindingResult.rejectValue("birthday", "error.birthday", "Birthday is required");
         } else {

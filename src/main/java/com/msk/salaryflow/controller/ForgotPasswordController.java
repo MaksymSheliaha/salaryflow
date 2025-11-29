@@ -15,7 +15,6 @@ public class ForgotPasswordController {
 
     private final PasswordResetService resetService;
 
-    // 1. Сторінка запиту (Введіть логін)
     @GetMapping("/forgot-password")
     public String showForgotPasswordForm() {
         return "forgot-password";
@@ -28,7 +27,6 @@ public class ForgotPasswordController {
         return "redirect:/login";
     }
 
-    // 2. Сторінка зміни пароля (Введіть новий пароль)
     @GetMapping("/reset-password")
     public String showResetPasswordForm(@RequestParam("token") String token, Model model) {
         String result = resetService.validateToken(token);

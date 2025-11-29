@@ -32,7 +32,6 @@ public class EventLogService {
         eventLogRepository.deleteById(id);
     }
 
-    // ОНОВЛЕНИЙ МЕТОД: Приймає всі параметри фільтрації
     public long deleteByFilter(String from, String to, String eventType, String entity) {
         Instant fromInstant = parseFrom(from);
         Instant toInstant = parseTo(to);
@@ -51,7 +50,6 @@ public class EventLogService {
         return eventLogRepository.findById(id).orElse(null);
     }
 
-    // Виніс парсинг дат в окремі методи, щоб не дублювати код
     private Instant parseFrom(String from) {
         if (StringUtils.hasText(from)) {
             return LocalDate.parse(from).atStartOfDay(ZoneId.systemDefault()).toInstant();

@@ -41,7 +41,6 @@ public class DepartmentController {
         return "departments/department-list";
     }
 
-    // --- ОНОВЛЕНИЙ МЕТОД SAVE ---
     @PostMapping("/save")
     private String save(@Valid @ModelAttribute("department") Department department,
                         BindingResult bindingResult){ // BindingResult ловить помилки

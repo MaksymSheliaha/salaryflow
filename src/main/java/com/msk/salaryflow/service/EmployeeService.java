@@ -36,7 +36,10 @@ public class EmployeeService {
         return employeeRepository.findByEmail(email);
     }
 
-    @Cacheable(value = "employee_pages", key = "{#searchTerm, #departmentId, #position, #pensioners, #minSalary, #maxSalary, #pageable.pageNumber, #pageable.pageSize, #pageable.sort.toString()}")
+    @Cacheable(value = "employee_pages", key = "{#searchTerm, #departmentId, " +
+            "#position, #pensioners," +
+            " #minSalary, #maxSalary," +
+            " #pageable.pageNumber, #pageable.pageSize, #pageable.sort.toString()}")
     public Page<Employee> findAll(String searchTerm, UUID departmentId, Position position,
                                   Boolean pensioners, Double minSalary, Double maxSalary,
                                   Pageable pageable) {
@@ -112,7 +115,10 @@ public class EmployeeService {
     }
 
     @Caching(evict = {
-            @CacheEvict(value = { "department", "department_pages", "departmentsSearch", "employee", "employee_pages" }, allEntries = true),
+            @CacheEvict(value = {
+                    "department", "department_pages",
+                    "departmentsSearch", "employee",
+                    "employee_pages" }, allEntries = true),
             @CacheEvict(value = "employee", key = "#employee.id")
     })
     @LogEvent(action = "UPDATE_EMPLOYEE")
@@ -121,7 +127,9 @@ public class EmployeeService {
     }
 
     @Caching(evict = {
-            @CacheEvict(value = { "department", "department_pages", "departmentsSearch", "employee", "employee_pages" }, allEntries = true)
+            @CacheEvict(value = {
+                    "department", "department_pages",
+                    "departmentsSearch", "employee", "employee_pages" }, allEntries = true)
     })
     @LogEvent(action = "CREATE_EMPLOYEE")
     public Employee save(Employee employee) {

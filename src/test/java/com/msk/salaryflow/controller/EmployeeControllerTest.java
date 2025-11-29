@@ -25,14 +25,9 @@ class EmployeeControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    // ЗМІНЕНО: @MockBean -> @MockitoBean
     @MockitoBean
     private EmployeeService employeeService;
 
-    // ЗМІНЕНО: @MockBean -> @MockitoBean
-    // Це поле підсвічується жовтим (unused), бо ми його не викликаємо в тестах нижче,
-    // АЛЕ воно обов'язкове, бо контролер не створиться без DepartmentService.
-    // Тому залишаємо його як є.
     @MockitoBean
     private DepartmentService departmentService;
 
@@ -45,10 +40,8 @@ class EmployeeControllerTest {
         employee.setId(id);
         employee.setFirstName("Alice");
 
-        // Налаштовуємо поведінку сервісу
         when(employeeService.findById(id)).thenReturn(employee);
 
-        // Act & Assert
         mockMvc.perform(get("/employees/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(view().name("employees/employee-info"))
