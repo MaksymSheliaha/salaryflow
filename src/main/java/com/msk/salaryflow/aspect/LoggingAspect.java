@@ -1,7 +1,7 @@
 package com.msk.salaryflow.aspect;
 
 import com.msk.salaryflow.aspect.annotation.LogEvent;
-import com.msk.salaryflow.entity.*; // Імпортуємо всі сутності (User, Role і т.д.)
+import com.msk.salaryflow.entity.*;
 import com.msk.salaryflow.repository.EventLogRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Id;
@@ -56,9 +56,7 @@ public class LoggingAspect {
             String targetName = null;
             Map<String, String> changes = null;
 
-            // Логіка визначення targetEntity:
-            // 1. Якщо метод повернув об'єкт (наприклад deleteById тепер повертає User) - беремо його.
-            // 2. Якщо метод void, беремо перший аргумент.
+
             Object targetEntity = (result != null) ? result : (args.length > 0 ? args[0] : null);
 
             if (targetEntity != null) {
@@ -87,7 +85,8 @@ public class LoggingAspect {
     }
 
     @Async
-    public void saveLogAsync(String action, String entity, String user, String targetId, String targetName, Map<String, String> changes) {
+    public void saveLogAsync(String action, String entity, String user, String targetId, String targetName,
+                             Map<String, String> changes) {
         try {
             EventLog log = new EventLog(action, entity, user, targetId, targetName, changes);
             eventLogRepository.save(log);
@@ -125,10 +124,9 @@ public class LoggingAspect {
                 field.setAccessible(true);
                 String fieldName = field.getName();
 
-                // Ігноруємо пароль і технічні поля, але ROLES залишаємо
                 if (fieldName.equals("password")
                         || fieldName.equals("employee") || fieldName.equals("department")
-                        || fieldName.equals("authorities")) { // authorities ігноруємо, roles беремо
+                        || fieldName.equals("authorities")) {
                     continue;
                 }
 
@@ -137,7 +135,6 @@ public class LoggingAspect {
 
                 if (oldVal == null && newVal == null) continue;
 
-                // Спеціальна обробка для Ролей (Set<Role>)
                 if (fieldName.equals("roles")) {
                     String oldRoles = rolesToString(oldVal);
                     String newRoles = rolesToString(newVal);
@@ -147,7 +144,6 @@ public class LoggingAspect {
                     continue;
                 }
 
-                // Стандартне порівняння
                 if (!Objects.equals(oldVal, newVal)) {
                     String oldS = (oldVal != null) ? oldVal.toString() : "null";
                     String newS = (newVal != null) ? newVal.toString() : "null";
@@ -155,7 +151,6 @@ public class LoggingAspect {
                     if (oldS.contains("T00:00")) oldS = oldS.split("T")[0];
                     if (newS.contains("T00:00")) newS = newS.split("T")[0];
 
-                    // Для красивого виводу enabled
                     if (fieldName.equals("enabled")) {
                         if(oldS.equals("true")) oldS = "Active"; else oldS = "Banned";
                         if(newS.equals("true")) newS = "Active"; else newS = "Banned";
@@ -170,7 +165,6 @@ public class LoggingAspect {
         return diff;
     }
 
-    // Допоміжний метод для перетворення ролей у рядок "[ADMIN, MANAGER]"
     private String rolesToString(Object roleCollection) {
         if (roleCollection instanceof Collection<?>) {
             return ((Collection<?>) roleCollection).stream()
@@ -191,7 +185,6 @@ public class LoggingAspect {
                 return e.getFirstName() + " " + e.getLastName();
             }
 
-            // 2. User -> Username + Status
             if (obj instanceof User) {
                 User u = (User) obj;
                 String status = u.isEnabled() ? "Active" : "Banned";

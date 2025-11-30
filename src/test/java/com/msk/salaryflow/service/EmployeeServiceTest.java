@@ -24,30 +24,25 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class) // Вмикаємо Mockito
 class EmployeeServiceTest {
 
-    @Mock // Створюємо імітацію репозиторія (не справжній)
+    @Mock
     private EmployeeRepository employeeRepository;
 
-    @InjectMocks // Вставляємо цей мок у справжній сервіс
+    @InjectMocks
     private EmployeeService employeeService;
 
     @Test
     void save_ShouldReturnSavedEmployee() {
-        // 1. Arrange (Підготовка)
         Employee employee = new Employee();
         employee.setFirstName("John");
         employee.setEmail("test@test.com");
 
-        // Кажемо моку: "Коли тебе попросять зберегти будь-що, поверни цей об'єкт"
         when(employeeRepository.save(any(Employee.class))).thenReturn(employee);
 
-        // 2. Act (Дія)
         Employee saved = employeeService.save(employee);
 
-        // 3. Assert (Перевірка)
         assertNotNull(saved);
         assertEquals("John", saved.getFirstName());
 
-        // Перевіряємо, що метод save у репозиторія викликався рівно 1 раз
         verify(employeeRepository, times(1)).save(employee);
     }
 

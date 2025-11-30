@@ -8,11 +8,11 @@ public class HomeController {
 
     @GetMapping("/")
     public String home() {
-        return "index"; // Повертає шаблон index.html
+        return "index";
     }
 
     @GetMapping("/login")
     public String login() {
-        return "login"; // Повертає login.html
+        return "login";
     }
 }

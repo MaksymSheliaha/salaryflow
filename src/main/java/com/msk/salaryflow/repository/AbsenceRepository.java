@@ -9,5 +9,4 @@ import java.util.UUID;
 
 @Repository
 public interface AbsenceRepository extends JpaRepository<Absence, UUID>, JpaSpecificationExecutor<Absence> {
-    // JpaSpecificationExecutor дозволяє передавати criteria (фільтри) у findAll
 }

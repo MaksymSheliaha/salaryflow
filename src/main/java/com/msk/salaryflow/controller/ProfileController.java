@@ -24,7 +24,6 @@ public class ProfileController {
     public String profile(Model model, Principal principal) {
         String username = principal.getName();
 
-        // ВИПРАВЛЕНО: Просто беремо юзера по username (без кешу це надійно)
         User user = userService.findByUsername(username);
 
         model.addAttribute("user", user);

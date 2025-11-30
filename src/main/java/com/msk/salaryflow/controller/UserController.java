@@ -73,14 +73,10 @@ public class UserController {
         return "redirect:/users";
     }
 
-    // --- ЗМІНА ТУТ ---
     @GetMapping("/toggle")
     public String toggleStatus(@RequestParam("id") UUID id) {
-        // 1. Спочатку знаходимо юзера
         User user = userService.findById(id);
 
-        // 2. Якщо він є - передаємо ЦІЛИЙ об'єкт у сервіс
-        // Це запустить Аспект з правильними даними
         if (user != null) {
             userService.toggleStatus(user);
         }

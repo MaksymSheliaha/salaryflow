@@ -78,9 +78,7 @@ public class UserService {
         return userToDelete;
     }
 
-    // --- ЗМІНА ТУТ ---
-    // 1. Приймаємо User замість UUID (щоб Аспект міг зробити Diff)
-    // 2. Повертаємо User (щоб Аспект міг взяти гарне ім'я)
+
     @CacheEvict(value = "users_page_dto", allEntries = true)
     @LogEvent(action = "UPDATE_USER_STATUS")
     public User toggleStatus(User user) {

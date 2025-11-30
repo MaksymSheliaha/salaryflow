@@ -23,7 +23,6 @@ class EmployeeRepositoryTest {
 
     @Test
     void findByEmail_ShouldReturnEmployee() {
-        // Arrange
         Department dept = new Department();
         dept.setName("IT");
         dept.setLocation("Room 1");
@@ -40,10 +39,8 @@ class EmployeeRepositoryTest {
 
         employeeRepository.save(emp);
 
-        // Act
         Optional<Employee> found = employeeRepository.findByEmail("john@example.com");
 
-        // Assert
         assertTrue(found.isPresent());
         assertEquals("John", found.get().getFirstName());
     }

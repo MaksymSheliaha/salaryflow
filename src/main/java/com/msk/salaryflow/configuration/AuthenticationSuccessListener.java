@@ -16,20 +16,17 @@ public class AuthenticationSuccessListener implements ApplicationListener<Authen
 
     @Override
     public void onApplicationEvent(AuthenticationSuccessEvent event) {
-        // Отримуємо користувача, який увійшов
         Object principal = event.getAuthentication().getPrincipal();
 
         if (principal instanceof UserDetails) {
             String username = ((UserDetails) principal).getUsername();
 
-            // Створюємо запис у логах
-            // Action: LOGIN, Entity: User, Author: username, Target: username
             EventLog log = new EventLog(
                     "LOGIN",
                     "Security",
                     username,
-                    null,       // Target ID не обов'язковий для логіна
-                    username    // Target Name - ім'я того, хто увійшов
+                    null,
+                    username
             );
 
             eventLogRepository.save(log);
