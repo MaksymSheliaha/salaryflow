@@ -42,7 +42,6 @@ public class AbsenceController {
         Sort.Direction sortDirection = sortParams.length > 1 && "desc".equalsIgnoreCase(sortParams[1])
                 ? Sort.Direction.DESC : Sort.Direction.ASC;
 
-        // Поле sortField тут не змінюємо, бо сортування відбувається в пам'яті в Service
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortField));
 
         Page<AbsenceResponse> absences = service.findAll(searchTerm, type, pageable);
@@ -66,7 +65,6 @@ public class AbsenceController {
 
         if (bindingResult.hasErrors()) {
             model.addAttribute("types", AbsenceType.values());
-            // Перевіряємо, чи є id працівника, і якщо є, намагаємося дістати його ім'я
             if (absence.getEmployeeId() != null) {
                 try {
                     Employee employee = employeeService.findById(absence.getEmployeeId());
@@ -75,7 +73,6 @@ public class AbsenceController {
                     }
                 } catch (Exception ignored) {}
             }
-            // Визначаємо, чи це новий запис, для коректної поведінки форми
             model.addAttribute("isNew", absence.getId() == null);
             return "absences/absence-form";
         }
@@ -111,7 +108,7 @@ public class AbsenceController {
         absence.setStartDate(LocalDate.now());
 
         if (employeeId != null) {
-            absence.setEmployeeId(employeeId); // employeeId вже UUID
+            absence.setEmployeeId(employeeId);
             Employee employee = employeeService.findById(employeeId);
             if (employee != null) {
                 model.addAttribute("selectedEmployeeName", employee.getFirstName() + " " + employee.getLastName());

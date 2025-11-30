@@ -25,7 +25,6 @@ class EventLogControllerTest {
 
     @MockitoBean private EventLogService eventLogService;
 
-    // Ці моки потрібні, бо контролер їх використовує в openTarget
     @MockitoBean private EmployeeService employeeService;
     @MockitoBean private DepartmentService departmentService;
     @MockitoBean private AbsenceService absenceService;

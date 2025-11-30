@@ -25,7 +25,6 @@ public class PasswordResetToken {
 
     private LocalDateTime expiryDate;
 
-    // Токен живе 1 годину
     public PasswordResetToken(User user, String token) {
         this.user = user;
         this.token = token;

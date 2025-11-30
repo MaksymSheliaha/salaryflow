@@ -11,13 +11,11 @@ import java.util.UUID;
 
 public interface EventLogRepository extends MongoRepository<EventLog, UUID> {
 
-    // Метод пошуку (залишається без змін)
     @Query("{ 'timestamp': { $gte: ?0, $lt: ?1 }, " +
             "  'event': { $regex: '^?2' }, " +
             "  'entityName': { $regex: '^?3' } }")
     Page<EventLog> searchLogs(Instant from, Instant to, String eventPrefix, String entityPrefix, Pageable pageable);
 
-    // delete = true означає, що це операція видалення
     @Query(value = "{ 'timestamp': { $gte: ?0, $lt: ?1 }, " +
             "  'event': { $regex: '^?2' }, " +
             "  'entityName': { $regex: '^?3' } }", delete = true)

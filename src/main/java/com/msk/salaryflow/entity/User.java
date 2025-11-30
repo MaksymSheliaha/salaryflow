@@ -43,7 +43,6 @@ public class User implements UserDetails {
             inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles;
 
-    // --- UserDetails методи ---
 
     @JsonIgnore
     @Override

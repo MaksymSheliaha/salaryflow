@@ -23,18 +23,15 @@ public class PasswordResetService {
     @Transactional
     public void createTokenAndSendEmail(String username) {
         User user = userRepository.findByUsername(username).orElse(null);
-        if (user == null) return; // Якщо юзера немає, мовчимо з міркувань безпеки
+        if (user == null) return;
 
-        // Видаляємо старі токени, якщо були
         tokenRepository.deleteByUser(user);
 
-        // Створюємо новий токен
         String token = UUID.randomUUID().toString();
         PasswordResetToken myToken = new PasswordResetToken(user, token);
         tokenRepository.save(myToken);
 
-        // ТУТ МАЛА БУТИ ВІДПРАВКА EMAIL
-        // Але ми виведемо в консоль для тесту
+
         System.out.println("========================================");
         System.out.println("PASSWORD RESET LINK for user: " + username);
         System.out.println("http://localhost:8080/reset-password?token=" + token);
@@ -50,7 +47,7 @@ public class PasswordResetService {
         if (passToken.get().isExpired()) {
             return "Token expired";
         }
-        return null; // Все ок
+        return null;
     }
 
     @Transactional
@@ -62,7 +59,6 @@ public class PasswordResetService {
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
 
-        // Видаляємо використаний токен
         tokenRepository.delete(passToken);
     }
 }

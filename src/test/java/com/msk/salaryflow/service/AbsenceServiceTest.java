@@ -47,36 +47,33 @@ class AbsenceServiceTest {
 
     @Test
     void findAll_ShouldCalculateSickPay_ForLongExperience() {
-        // ARRANGE
         UUID empId = UUID.randomUUID();
         Employee employee = new Employee();
         employee.setId(empId);
         employee.setFirstName("Test");
         employee.setLastName("User");
-        employee.setSalary(3000.0); // 100 грн в день (3000 / 30)
-        // Найнятий 10 років тому (стаж > 4 років -> 100% виплати)
+        employee.setSalary(3000.0);
         employee.setHireDate(LocalDate.now().minusYears(10).atStartOfDay(ZoneId.systemDefault()).toInstant());
 
         Absence absence = new Absence();
         absence.setId(UUID.randomUUID());
         absence.setType(AbsenceType.SICK_LEAVE);
         absence.setStartDate(LocalDate.now());
-        absence.setEndDate(LocalDate.now().plusDays(4)); // 5 днів (0..4)
-        absence.setEmployee(employee); // Важливо встановити зв'язок
+        absence.setEndDate(LocalDate.now().plusDays(4));
+        absence.setEmployee(employee);
 
         Page<Absence> page = new PageImpl<>(List.of(absence));
 
         when(absenceRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
-        // ACT
+
         Page<AbsenceResponse> result = absenceService.findAll(null, null, Pageable.unpaged());
 
-        // ASSERT
+
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
 
         AbsenceResponse dto = result.getContent().get(0);
-        // Розрахунок: (3000 / 30) * 5 днів * 1.0 (100%) = 100 * 5 = 500.0
         assertEquals(500.0, dto.getSickPay());
     }
 

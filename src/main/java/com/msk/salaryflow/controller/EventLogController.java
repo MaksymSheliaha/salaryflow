@@ -23,7 +23,6 @@ public class EventLogController {
 
     private final EventLogService eventLogService;
 
-    // Додаємо сервіси, щоб перевіряти існування об'єктів
     private final EmployeeService employeeService;
     private final DepartmentService departmentService;
     private final AbsenceService absenceService;
@@ -37,30 +36,24 @@ public class EventLogController {
                              @PageableDefault(sort = "timestamp", direction = Sort.Direction.DESC) Pageable pageable,
                              Model model) {
 
-        // --- ВАЛІДАЦІЯ ДАТ ---
         if (from != null && !from.isBlank() && to != null && !to.isBlank()) {
             LocalDate fromDate = LocalDate.parse(from);
             LocalDate toDate = LocalDate.parse(to);
 
             if (fromDate.isAfter(toDate)) {
-                // 1. Додаємо помилку
                 model.addAttribute("error", "Start date cannot be after End date.");
 
-                // 2. Повертаємо пусту сторінку, щоб не навантажувати базу
                 model.addAttribute("eventLogs", Page.empty().getContent());
                 model.addAttribute("page", Page.empty(pageable));
 
-                // 3. Повертаємо введені параметри, щоб користувач міг їх виправити
                 model.addAttribute("from", from);
                 model.addAttribute("to", to);
                 model.addAttribute("eventType", eventType);
                 model.addAttribute("entity", entity);
 
-                // Повертаємо сторінку (не редірект!)
                 return "events/event-log-list";
             }
         }
-        // ---------------------
 
         Page<EventLog> eventLogs = eventLogService.getEventLogs(pageable, from, to, eventType, entity);
 
@@ -108,14 +101,12 @@ public class EventLogController {
         return "redirect:/events";
     }
 
-    // --- ГОЛОВНА ЗМІНА ТУТ ---
     @GetMapping("/open-target")
     public String openTarget(@RequestParam("entity") String entityName,
                              @RequestParam("targetId") String targetId,
                              @RequestParam("action") String action,
                              @RequestParam("logId") UUID logId) {
 
-        // Якщо це подія видалення, то об'єкта точно немає -> йдемо в RAW
         if (action != null && action.toUpperCase().startsWith("DELETE")) {
             return "redirect:/events/" + logId + "/raw";
         }
@@ -126,7 +117,6 @@ public class EventLogController {
         try {
             UUID uuid = UUID.fromString(targetId);
 
-            // Перевіряємо, чи існує об'єкт в базі
             switch (entityName) {
                 case "Employee":
                     exists = employeeService.findById(uuid) != null;
@@ -152,11 +142,9 @@ public class EventLogController {
             exists = false;
         }
 
-        // Якщо об'єкт існує - йдемо на його сторінку
         if (exists) {
             return "redirect:" + redirectUrl;
         } else {
-            // Якщо об'єкт видалено (exists == false) - йдемо на перегляд логу
             return "redirect:/events/" + logId + "/raw";
         }
     }
@@ -175,7 +163,6 @@ public class EventLogController {
         rawData.put("Target Name", log.getTargetName()); // Додали ім'я
         rawData.put("Target ID", log.getTargetId());
 
-        // Додаємо зміни в таблицю raw, якщо вони є
         if (log.getChangeDetails() != null) {
             rawData.put("--- CHANGES ---", "");
             rawData.putAll(log.getChangeDetails());
