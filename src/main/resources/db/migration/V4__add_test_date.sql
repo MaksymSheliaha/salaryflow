@@ -1,6 +1,3 @@
--- Insert 100 new departments
--- Requires PostgreSQL; enables uuid-ossp to generate UUIDv4 ids
-
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 INSERT INTO department (id, name, location)

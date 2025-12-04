@@ -1,4 +1,3 @@
--- СТВОРЕННЯ ТАБЛИЦІ КОРИСТУВАЧІВ (users)
 CREATE TABLE "users" (
                          id UUID PRIMARY KEY,
                          username VARCHAR(50) UNIQUE NOT NULL,
@@ -7,13 +6,11 @@ CREATE TABLE "users" (
                          created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- СТВОРЕННЯ ТАБЛИЦІ РОЛЕЙ (roles)
 CREATE TABLE "roles" (
                          id SERIAL PRIMARY KEY,
                          name VARCHAR(50) UNIQUE NOT NULL
 );
 
--- СТВОРЕННЯ ЗВ'ЯЗУЮЧОЇ ТАБЛИЦІ (user_roles)
 CREATE TABLE "user_roles" (
                               user_id UUID NOT NULL,
                               role_id INTEGER NOT NULL,
@@ -22,5 +19,4 @@ CREATE TABLE "user_roles" (
                               FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE
 );
 
--- ДОДАВАННЯ РОЛЕЙ
 INSERT INTO roles (name) VALUES ('ROLE_ADMIN'), ('ROLE_MANAGER');
