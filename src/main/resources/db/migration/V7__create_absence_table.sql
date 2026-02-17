@@ -12,6 +12,5 @@ CREATE TABLE absence (
                                  ON DELETE CASCADE
 );
 
--- Створення індексу для швидкого пошуку відсутностей працівника та по датах
 CREATE INDEX idx_absence_employee_id ON absence (employee_id);
 CREATE INDEX idx_absence_dates ON absence (start_date, end_date);
